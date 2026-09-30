@@ -10,7 +10,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 override CXXFLAGS += $(COMMONINC)
 
-CXXSRC = src/main.cpp src/cache_api.cpp
+CXXSRC = src/main.cpp src/vector3.cpp
 
 CXXOBJ := $(addprefix $(OUT_O_DIR)/,$(CXXSRC:.cpp=.o)) 
 
