@@ -1,4 +1,5 @@
 #include "geometry.hpp"
+
 //--------------//
 //Vector methods//
 //--------------//
