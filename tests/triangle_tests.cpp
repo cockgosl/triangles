@@ -16,13 +16,13 @@ TEST(Triangle3Test, Edges) {
     Vector3 ab = triangle.edge_AB();
     Vector3 ac = triangle.edge_AC();
 
-    EXPECT_DOUBLE_EQ(ab.get_x(), 1.0);
-    EXPECT_DOUBLE_EQ(ab.get_y(), 0.0);
-    EXPECT_DOUBLE_EQ(ab.get_z(), 0.0);
+    EXPECT_DOUBLE_EQ(ab.x, 1.0);
+    EXPECT_DOUBLE_EQ(ab.y, 0.0);
+    EXPECT_DOUBLE_EQ(ab.z, 0.0);
 
-    EXPECT_DOUBLE_EQ(ac.get_x(), 0.0);
-    EXPECT_DOUBLE_EQ(ac.get_y(), 1.0);
-    EXPECT_DOUBLE_EQ(ac.get_z(), 0.0);
+    EXPECT_DOUBLE_EQ(ac.x, 0.0);
+    EXPECT_DOUBLE_EQ(ac.y, 1.0);
+    EXPECT_DOUBLE_EQ(ac.z, 0.0);
 }
 
 TEST(Triangle3Test, Area) {
@@ -36,9 +36,9 @@ TEST(Triangle3Test, Normal) {
 
     Vector3 normal = triangle.normal();
 
-    EXPECT_NEAR(normal.get_x(), 0.0, EPSILON);
-    EXPECT_NEAR(normal.get_y(), 0.0, EPSILON);
-    EXPECT_NEAR(normal.get_z(), 1.0, EPSILON);
+    EXPECT_NEAR(normal.x, 0.0, EPSILON);
+    EXPECT_NEAR(normal.y, 0.0, EPSILON);
+    EXPECT_NEAR(normal.z, 1.0, EPSILON);
 }
 
 TEST(Triangle3Test, NonDegenerate) {
