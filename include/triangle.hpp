@@ -10,6 +10,7 @@ public:
     Vector3 b;
     Vector3 c;
 
+    Triangle3();
     Triangle3(const Vector3& a,
               const Vector3& b,
               const Vector3& c);

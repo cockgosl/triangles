@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
-foreach(object IN ITEMS vector3 triangle)
+foreach(object IN ITEMS vector3 triangle generator)
     add_executable(${object}_tests ${object}_tests.cpp)
     set_target_properties(${object}_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 
