@@ -7,22 +7,40 @@
 
 namespace triangles {
 
-constexpr double EPSILON = std::numeric_limits<double>::epsilon();
+constexpr double EPSILON = std::numeric_limits<double>::epsilon(); //TODO - get rid of the internal interlinkage variable
 // TODO - validate the logic
+Generator::Generator()
+    : Generator(GeneratorDefaults::r_max) {}
+
+Generator::Generator(double r_max)
+    : Generator(r_max,
+                r_max / GeneratorDefaults::expectation_divisor) {}
+
+Generator::Generator(double r_max, double expectation)
+    : Generator(r_max,
+                expectation,
+                r_max / GeneratorDefaults::stddev_divisor) {}
+
 Generator::Generator(double r_max,
                      double expectation,
                      double stddev)
         :r_max_(r_max), expectation_(expectation), stddev_(stddev) {
     if (std::fabs(r_max_) > GeneratorDefaults::r_max
-        || std::fabs(r_max_) <= EPSILON) r_max_ = GeneratorDefaults::r_max;
+        || std::fabs(r_max_) <= EPSILON) {
+        r_max_ = GeneratorDefaults::r_max;
+        throw std::invalid_argument("radius must be from EPSILON to default r_max");
+    }
     // if (r_max_ < 0 && std::fabs(r_max_) > GeneratorDefaults::r_max ) r_max_ = GeneratorDefaults::r_max;
 
-    if (std::fabs(expectation_) >= std::fabs(r_max_)) expectation_ = r_max_ / GeneratorDefaults::expectation_divisor;
+    if (expectation_ >= std::fabs(r_max_) || expectation_ < EPSILON)
+        expectation_ = std::fabs(r_max_ / GeneratorDefaults::expectation_divisor);
 
-    if (stddev_ < 0) stddev_ = -stddev_;
+    if (stddev_ < 0)
+        stddev_ = -stddev_;
     if (std::fabs(stddev_) >= std::fabs(r_max_) ||
         !std::isfinite(stddev_) ||
-        stddev_ <= EPSILON) stddev_ = std::fabs(r_max_ / GeneratorDefaults::stddev_divisor); // TODO - double comparison
+        stddev_ <= EPSILON)
+        stddev_ = std::fabs(r_max_ / GeneratorDefaults::stddev_divisor); // TODO - double comparison
 }
 
 Generator::~Generator() = default;
@@ -33,7 +51,7 @@ double Generator::generate_length() {
     double len;
     do {
         len = norm_gen(gen_);
-    } while (len < 0.0 || len > r_max_);
+    } while (len < EPSILON || len > std::fabs(r_max_));
 
     return len;
 }
@@ -92,17 +110,18 @@ Triangle3 Generator::generate_triangle() {
         triangle.b = abs_vector_a + rel_vector_b;
         triangle.c = abs_vector_a + rel_vector_c;
 
-    } while(triangle.is_degenerate());
+    } while(triangle.is_degenerate()); // TODO - take into characteristic radius scale
 
     return triangle;
 }
 
 std::vector<Triangle3> Generator::generate_triangles(unsigned count) {
-    std::vector<Triangle3> triangle_vec(count);
-    for (Triangle3& triangle : triangle_vec)
-        triangle = generate_triangle();
+    std::vector<Triangle3> result;
+    result.reserve(count);
+    for (unsigned index = 0; index < count; ++index)
+        result.push_back(generate_triangle());
 
-    return triangle_vec;
+    return result;
 }
 
 

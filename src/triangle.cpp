@@ -1,6 +1,7 @@
 #include "triangle.hpp"
 
 #include <limits>
+#include <cmath>
 
 namespace triangles {
 

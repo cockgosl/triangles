@@ -20,6 +20,7 @@ public:
     Vector3 operator-(const Vector3& vector) const;
     Vector3 operator-() const;
     Vector3 operator*(double scalar) const;
+    bool operator==(const Vector3& vector) const;
 };
 
 } // namespace triangles
