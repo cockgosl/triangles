@@ -1,6 +1,8 @@
 #pragma once
 
 #include "triangle.hpp"
+
+#include <optional>
 #include <random>
 #include <vector>
 
@@ -21,30 +23,33 @@ private:
     double stddev_;
     std::mt19937 gen_;
 
+    Generator(double r_max,
+              double expectation,
+              double dispersion);
+
     void gen_x_(Vector3& vector, double length);
     void gen_y_(Vector3& vector, double length);
     void gen_z_(Vector3& vector, double length);
 
 public:
-    Generator();
-    Generator(double r_max);
-    Generator(double r_max,
-              double expectation);
-    Generator(double r_max,
-              double expectation,
-              double dispersion);
-    ~Generator();
+    static std::optional<Generator> Create();
+    static std::optional<Generator> Create(double r_max);
+    static std::optional<Generator> Create(double r_max,
+                                           double expectation);
+    static std::optional<Generator> Create(double r_max,
+                                           double expectation,
+                                           double stddev);
 
-    double get_r_max()  { return r_max_; }
-    double get_expect() { return expectation_; }
-    double get_stddev() { return stddev_; }
+    double get_r_max()  const { return r_max_; }
+    double get_expect() const { return expectation_; }
+    double get_stddev() const { return stddev_; }
 
-    Vector3   generate_vector();
-    Vector3   generate_vector(double length);
+    std::optional<Vector3>   generate_vector();
+    std::optional<Vector3>   generate_vector(double length);
     double    generate_length();
 
-    Triangle3 generate_triangle();
-    std::vector<Triangle3> generate_triangles(unsigned count = GeneratorDefaults::triangles_count);
+    std::optional<Triangle3> generate_triangle();
+    std::optional<std::vector<Triangle3>> generate_triangles(unsigned count = GeneratorDefaults::triangles_count);
 };
 
 } // namespace triangles
