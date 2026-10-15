@@ -8,6 +8,7 @@
 
 namespace triangles {
 
+
 struct GeneratorDefaults {
     static constexpr double   r_max               = 1000.0;
     static constexpr double   expectation_divisor = 100.0;
@@ -27,10 +28,6 @@ private:
               double expectation,
               double dispersion);
 
-    void gen_x_(Vector3& vector, double length);
-    void gen_y_(Vector3& vector, double length);
-    void gen_z_(Vector3& vector, double length);
-
 public:
     static std::optional<Generator> Create();
     static std::optional<Generator> Create(double r_max);
@@ -44,9 +41,9 @@ public:
     double get_expect() const { return expectation_; }
     double get_stddev() const { return stddev_; }
 
-    std::optional<Vector3>   generate_vector();
-    std::optional<Vector3>   generate_vector(double length);
-    double    generate_length();
+    std::optional<Vector3> generate_vector();
+    std::optional<Vector3> generate_vector(double length);
+    double generate_length();
 
     std::optional<Triangle3> generate_triangle();
     std::optional<std::vector<Triangle3>> generate_triangles(unsigned count = GeneratorDefaults::triangles_count);
