@@ -1,6 +1,7 @@
 #include "triangle.hpp"
 
 #include <limits>
+#include <cmath>
 
 namespace triangles {
 
@@ -10,7 +11,8 @@ constexpr double EPSILON = std::numeric_limits<double>::epsilon();
 Triangle3::Triangle3(const Vector3& vector_1,
                      const Vector3& vector_2,
                      const Vector3& vector_3)
-            :a(vector_1), b(vector_2), c(vector_3){}
+            :a(vector_1), b(vector_2), c(vector_3) {}
+Triangle3::Triangle3()  = default;
 Triangle3::~Triangle3() = default;
 
 double Triangle3::area() const {

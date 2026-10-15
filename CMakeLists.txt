@@ -6,13 +6,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SRCS
     src/vector3.cpp
-    src/triangle.cpp)
+    src/triangle.cpp
+    src/generator.cpp)
 
 add_library(triangles_lib STATIC ${SRCS})
 target_include_directories(triangles_lib PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
-add_executable(triangles.out src/main.cpp)
-target_link_libraries(triangles.out PRIVATE triangles_lib)
+option(BUILD_APP "Build the application" OFF)
+
+if (BUILD_APP)
+    add_executable(triangles.out src/main.cpp)
+    target_link_libraries(triangles.out PRIVATE triangles_lib)
+endif()
 
 include(CTest)
 if(BUILD_TESTING)
