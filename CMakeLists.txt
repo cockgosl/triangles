@@ -25,6 +25,23 @@ add_library(triangles_lib STATIC ${SRCS})
 target_include_directories(triangles_lib PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_include_directories(glad PUBLIC "${PROJECT_SOURCE_DIR}/third_party/glad/include")
 
+set(SHADER_DIR "${PROJECT_SOURCE_DIR}/shaders")
+set(SHADER_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+
+file(MAKE_DIRECTORY "${SHADER_BUILD_DIR}")
+
+configure_file(
+    "${SHADER_DIR}/triangle.vert.glsl"
+    "${SHADER_BUILD_DIR}/triangle.vert.glsl"
+    COPYONLY
+)
+
+configure_file(
+    "${SHADER_DIR}/triangle.frag.glsl"
+    "${SHADER_BUILD_DIR}/triangle.frag.glsl"
+    COPYONLY
+)
+
 option(BUILD_APP "Build the application" OFF)
 
 if(BUILD_APP)
