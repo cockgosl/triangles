@@ -48,7 +48,8 @@ if(BUILD_APP)
     add_executable(
         triangles.out
         src/main.cpp
-        src/graphics.cpp
+        src/glfw_window.cpp
+        src/shader_program.cpp
     )
 
     target_link_libraries(
