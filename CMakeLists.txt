@@ -48,6 +48,8 @@ if(BUILD_APP)
     add_executable(
         triangles.out
         src/main.cpp
+        src/application.cpp
+        src/triangle_renderer.cpp
         src/glfw_window.cpp
         src/shader_program.cpp
     )
