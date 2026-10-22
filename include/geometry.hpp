@@ -12,18 +12,21 @@ private:
     Vector3 direction_;
     Vector3 point_;
 
-public:
     Line3(const Vector3& direction,
           const Vector3& point);
-    Line3(const Plane3& plane1,
-          const Plane3& plane2);
     explicit Line3(const Vector3& direction); // ctor via default point - beginning of coordinates
+public:
+    static std::optional<Line3> Create(const Vector3& direction,
+                                       const Vector3& point);
+    static std::optional<Line3> Create(const Plane3& plane1,
+                                       const Plane3& plane2);
+    static std::optional<Line3> Create(const Vector3& direction);
+
     ~Line3();
 
     const Vector3& get_direction() const { return direction_; }
     const Vector3& get_point() const { return point_; }
 
-    bool is_crossover(const Triangle3& triangle) const;
     bool operator==(const Line3& line) const;
 };
 
@@ -35,21 +38,25 @@ private:
     double C_;
     double D_;
 
-public:
-    explicit Plane3(const Triangle3& triangle);
     Plane3(const Vector3& point,
            const Vector3& normal);
-    Plane3(const Vector3& point1,
-           const Vector3& point2,
-           const Vector3& point3);
+public:
+    static std::optional<Plane3> Create(const Triangle3& triangle);
+    static std::optional<Plane3> Create(const Vector3& point,
+                                        const Vector3& normal);
+    static std::optional<Plane3> Create(const Vector3& point1,
+                                        const Vector3& point2,
+                                        const Vector3& point3);
     ~Plane3();
 
     Vector3 get_normal() const;
-    Vector3 get_point() const;
-
-    std::optional<Line3> intersection(const Plane3&, const Plane3&);
+    double get_a() const { return A_; }
+    double get_b() const { return B_; }
+    double get_c() const { return C_; }
+    double get_d() const { return D_; }
 
 };
 
+std::optional<Line3> intersection(const Plane3&, const Plane3&);
 
 } //namespace triangles
