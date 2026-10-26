@@ -10,7 +10,14 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(glfw)
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.3
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glfw glm)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -23,10 +30,12 @@ set(SRCS
     src/line3.cpp
     src/point2.cpp
     src/intersection.cpp)
+    src/camera.cpp)
 
 add_library(glad STATIC third_party/glad/src/gl.c)
 add_library(triangles_lib STATIC ${SRCS})
 target_include_directories(triangles_lib PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(triangles_lib PUBLIC glm::glm)
 target_include_directories(glad PUBLIC "${PROJECT_SOURCE_DIR}/third_party/glad/include")
 
 set(SHADER_DIR "${PROJECT_SOURCE_DIR}/shaders")
@@ -64,6 +73,7 @@ if(BUILD_APP)
         triangles_lib
         glad
         glfw
+        glm::glm
     )
 endif()
 
