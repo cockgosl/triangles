@@ -5,7 +5,7 @@ namespace graphics {
 struct CameraConfig {
     float field_of_view_degrees = 45.0f;
 
-    float movement_speed = 2.5f;
+    float movement_speed = 1.0f;
     float mouse_sensitivity = 0.1f;
 
     float near_plane = 0.1f;

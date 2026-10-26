@@ -4,6 +4,7 @@
 #include "shader_program.hpp"
 
 #include <glad/gl.h>
+#include <glm/glm.hpp>
 
 #include <optional>
 #include <vector>
@@ -11,24 +12,25 @@
 namespace graphics {
 
 class TriangleRenderer final {
-private:
-std::optional<ShaderProgram> shader_program_;
+  private:
+    std::optional<ShaderProgram> shader_program_;
 
-GLuint vao_ = 0;
-GLuint vbo_ = 0;
-GLsizei vertex_count_ = 0;
+    GLuint vao_ = 0;
+    GLuint vbo_ = 0;
+    GLsizei vertex_count_ = 0;
 
-public:
+  public:
     TriangleRenderer() = default;
     ~TriangleRenderer() noexcept;
 
-    TriangleRenderer(const TriangleRenderer&) = delete;
-    TriangleRenderer& operator=(const TriangleRenderer&) = delete;
+    TriangleRenderer(const TriangleRenderer &) = delete;
+    TriangleRenderer &operator=(const TriangleRenderer &) = delete;
 
-    bool Initialize(const std::vector<float>& vertices);
-    void Render() const noexcept;
+    bool Initialize(const std::vector<float> &vertices);
+    void Render(const glm::mat4 &view,
+                const glm::mat4 &projection) const noexcept;
 };
 
-}  // namespace graphics
+} // namespace graphics
 
 #endif
