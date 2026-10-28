@@ -31,8 +31,13 @@ Vector3 Triangle3::edge_AC() const {
     return c - a;
 }
 
+Vector3 Triangle3::edge_BC() const {
+    return c - b;
+}
+
 Vector3 Triangle3::normal() const {
     return edge_AB().cross(edge_AC()).normalized();
 }
+
 
 } // namespace triangles

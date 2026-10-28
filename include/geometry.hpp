@@ -59,4 +59,23 @@ public:
 
 std::optional<Line3> intersection(const Plane3&, const Plane3&);
 
+class Point2 {
+private:
+    double x_;
+    double y_;
+
+    Point2(const double x,
+           const double y);
+
+public:
+    static std::optional<Point2> Create(const Vector3& vector);
+    static std::optional<Point2> Create(const double x,
+                                        const double y);
+    ~Point2();
+
+    double get_x() const { return x_; }
+    double get_y() const { return y_; }
+
+};
+
 } //namespace triangles
