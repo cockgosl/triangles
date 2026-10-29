@@ -57,8 +57,11 @@ public:
 
 };
 
-std::optional<Line3> intersection(const Plane3&, const Plane3&);
-
+std::optional<Line3> intersection(const Plane3& plane_1,
+                                  const Plane3& plane_2);
+std::optional<bool> intersection(const Triangle3& triangle_1,
+                                 const Triangle3& triangle_2);
+                                 
 class Point2 {
 private:
     double x_;

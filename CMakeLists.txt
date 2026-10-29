@@ -7,7 +7,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(SRCS
     src/vector3.cpp
     src/triangle.cpp
-    src/generator.cpp)
+    src/generator.cpp
+    src/geometry.cpp)
 
 add_library(triangles_lib STATIC ${SRCS})
 target_include_directories(triangles_lib PUBLIC "${PROJECT_SOURCE_DIR}/include")
