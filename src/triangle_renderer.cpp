@@ -174,6 +174,8 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
         return false;
     }
 
+    shadow_config_ = shadow_config;
+
     if (shadow_config_.projection_padding <= 0.0f ||
         shadow_config_.min_bias < 0.0f ||
         shadow_config_.slope_bias_scale < 0.0f ||
@@ -182,8 +184,6 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
         std::cerr << "Invalid shadow configuration.\n";
         return false;
     }
-
-    shadow_config_ = shadow_config;
 
     auto shader_program =
         ShaderProgram::Create(*vertex_source, *fragment_source);
@@ -262,7 +262,6 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
 
     light_space_matrix_ = *light_space_matrix;
 
-    RenderShadowPass(model, light_space_matrix_);
     RenderShadowPass(model, light_space_matrix_);
 
     return true;

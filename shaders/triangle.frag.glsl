@@ -31,7 +31,7 @@ float CalculateShadow(vec3 normal, vec3 lightDir) {
 
     float currentDepth = projectedCoords.z;
 
-    float cosTheta = max(dot(normal, lightDir), 0.0);
+    float cosTheta = abs(dot(normal, lightDir));
 
     float sinTheta = sqrt(max(1.0 - cosTheta * cosTheta, 0.0));
 
@@ -62,19 +62,22 @@ float CalculateShadow(vec3 normal, vec3 lightDir) {
 void main() {
     vec3 baseColor = vec3(1.0, 0.5, 0.2);
 
-    vec3 normal = normalize(fragNormal);
-    vec3 lightDir = normalize(lightDirection);
+    vec3 geometricNormal = normalize(fragNormal);
 
-    // Handle triangles visible from their back side.
+    vec3 shadingNormal = geometricNormal;
+
     if (!gl_FrontFacing) {
-        normal = -normal;
+        shadingNormal = -shadingNormal;
     }
 
-    // Lambert diffuse lighting.
-    float diffuse = max(dot(normal, lightDir), 0.0);
+    vec3 lightDir = normalize(lightDirection);
 
-    // Calculate shadow visibility.
-    float shadow = CalculateShadow(normal, lightDir);
+    // Lambert diffuse lighting.
+    float diffuse = max(dot(shadingNormal, lightDir), 0.0);
+
+    // Calculate shadow visibility using the geometric normal.
+    float shadow = CalculateShadow(geometricNormal, lightDir);
+
     float visibility = 1.0 - shadow * shadowStrength;
 
     // Combine ambient and diffuse lighting.
