@@ -39,15 +39,23 @@ ConvertTrianglesToVertices(const std::vector<Triangle3> &triangles) {
     }
 
     std::vector<float> vertices;
-    vertices.reserve(triangles.size() * 9);
+    vertices.reserve(triangles.size() * 18);
 
     for (const auto &triangle : triangles) {
         const Vector3 *points[] = {&triangle.a, &triangle.b, &triangle.c};
 
+        const Vector3 normal = triangle.normal();
+
         for (const auto *point : points) {
+            // Position.
             vertices.push_back(static_cast<float>(point->x * scale));
             vertices.push_back(static_cast<float>(point->y * scale));
             vertices.push_back(static_cast<float>(point->z * scale));
+
+            // Normal.
+            vertices.push_back(static_cast<float>(normal.x));
+            vertices.push_back(static_cast<float>(normal.y));
+            vertices.push_back(static_cast<float>(normal.z));
         }
     }
 

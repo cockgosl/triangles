@@ -40,6 +40,7 @@ class TriangleRenderer final {
     GLsizei vertex_count_ = 0;
 
     ShadowConfig shadow_config_;
+    glm::mat4 light_space_matrix_{1.0f};
     GLuint shadow_framebuffer_ = 0;
     GLuint shadow_depth_texture_ = 0;
 

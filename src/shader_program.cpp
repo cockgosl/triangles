@@ -238,8 +238,8 @@ ShaderProgram &ShaderProgram::operator=(ShaderProgram &&rhs) noexcept {
     return *this;
 }
 
-void ShaderProgram::SetInt(const std::string &name, int value) const noexcept {
-    const GLint location = glGetUniformLocation(program_id_, name.c_str());
+void ShaderProgram::SetInt(const char *name, int value) const noexcept {
+    const GLint location = glGetUniformLocation(program_id_, name);
 
     if (location < 0) {
         return;
@@ -260,6 +260,21 @@ void ShaderProgram::SetFloat(const char *name, float value) const noexcept {
     }
 
     glUniform1f(location, value);
+}
+
+void ShaderProgram::SetVec3(const char *name,
+                            const glm::vec3 &value) const noexcept {
+    if (name == nullptr) {
+        return;
+    }
+
+    const GLint location = glGetUniformLocation(program_id_, name);
+
+    if (location < 0) {
+        return;
+    }
+
+    glUniform3fv(location, 1, glm::value_ptr(value));
 }
 
 void ShaderProgram::SetMatrix4(const char *name,

@@ -153,6 +153,10 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
 
     shader_program_->Use();
 
+    const glm::vec3 light_direction = glm::normalize(
+        shadow_config_.light_position - shadow_config_.light_target);
+
+    shader_program_->SetVec3("lightDirection", light_direction);
     shader_program_->SetInt("shadowMap", 0);
     shader_program_->SetFloat("shadowBias", shadow_config_.bias);
     shader_program_->SetFloat("shadowStrength", shadow_config_.strength);
@@ -172,15 +176,19 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
                  static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
                  vertices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          static_cast<GLsizei>(3 * sizeof(float)), nullptr);
+    constexpr GLsizei kVertexStride = static_cast<GLsizei>(6 * sizeof(float));
 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, kVertexStride, nullptr);
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, kVertexStride,
+                          reinterpret_cast<void *>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    vertex_count_ = static_cast<GLsizei>(vertices.size() / 3);
+    vertex_count_ = static_cast<GLsizei>(vertices.size() / 6);
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
@@ -188,6 +196,11 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
     if (!InitializeShadowMap()) {
         return false;
     }
+    const glm::mat4 model{1.0f};
+
+    light_space_matrix_ = GetLightSpaceMatrix(shadow_config_);
+
+    RenderShadowPass(model, light_space_matrix_);
 
     return true;
 }
@@ -239,10 +252,6 @@ void TriangleRenderer::Render(const glm::mat4 &view,
     }
 
     const glm::mat4 model{1.0f};
-    const glm::mat4 light_space_matrix = GetLightSpaceMatrix(shadow_config_);
-
-    // First pass: generate the shadow map.
-    RenderShadowPass(model, light_space_matrix);
 
     // Second pass: render the scene from the camera's point of view.
     shader_program_->Use();
@@ -250,7 +259,7 @@ void TriangleRenderer::Render(const glm::mat4 &view,
     shader_program_->SetMatrix4("model", model);
     shader_program_->SetMatrix4("view", view);
     shader_program_->SetMatrix4("projection", projection);
-    shader_program_->SetMatrix4("lightSpaceMatrix", light_space_matrix);
+    shader_program_->SetMatrix4("lightSpaceMatrix", light_space_matrix_);
 
     // Bind the shadow map to texture unit 0.
     glActiveTexture(GL_TEXTURE0);
