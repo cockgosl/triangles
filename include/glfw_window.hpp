@@ -37,8 +37,8 @@ class Window {
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
 
-    Window(Window &&other) noexcept;
-    Window &operator=(Window &&other) = delete;
+    Window(Window &&rhs) noexcept;
+    Window &operator=(Window &&rhs) = delete;
 
     bool ShouldClose() const noexcept;
     void SwapBuffers() const noexcept;

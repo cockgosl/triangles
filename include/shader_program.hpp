@@ -26,6 +26,7 @@ class ShaderProgram {
     ShaderProgram(ShaderProgram &&rhs) noexcept;
     ShaderProgram &operator=(ShaderProgram &&rhs) noexcept;
 
+    void SetInt(const std::string &name, int value) const noexcept;
     void SetMatrix4(const char *name, const glm::mat4 &matrix) const noexcept;
 
     void Use() const noexcept;

@@ -71,9 +71,9 @@ std::optional<Window> Window::Create(int width, int height, const char *title) {
 
 Window::~Window() noexcept { Reset(); }
 
-Window::Window(Window &&other) noexcept
-    : window_(std::exchange(other.window_, nullptr)),
-      glfw_initialized_(std::exchange(other.glfw_initialized_, false)) {
+Window::Window(Window &&rhs) noexcept
+    : window_(std::exchange(rhs.window_, nullptr)),
+      glfw_initialized_(std::exchange(rhs.glfw_initialized_, false)) {
     if (window_ != nullptr) {
         glfwSetWindowUserPointer(window_, this);
     }

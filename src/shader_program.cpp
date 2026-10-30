@@ -224,18 +224,28 @@ ShaderProgram::~ShaderProgram() noexcept {
         glDeleteProgram(program_id_);
 }
 
-ShaderProgram::ShaderProgram(ShaderProgram &&other) noexcept
-    : program_id_(std::exchange(other.program_id_, GLuint{0})) {}
+ShaderProgram::ShaderProgram(ShaderProgram &&rhs) noexcept
+    : program_id_(std::exchange(rhs.program_id_, GLuint{0})) {}
 
-ShaderProgram &ShaderProgram::operator=(ShaderProgram &&other) noexcept {
-    if (this != &other) {
+ShaderProgram &ShaderProgram::operator=(ShaderProgram &&rhs) noexcept {
+    if (this != &rhs) {
         if (program_id_ != 0)
             glDeleteProgram(program_id_);
 
-        program_id_ = std::exchange(other.program_id_, GLuint{0});
+        program_id_ = std::exchange(rhs.program_id_, GLuint{0});
     }
 
     return *this;
+}
+
+void ShaderProgram::SetInt(const std::string &name, int value) const noexcept {
+    const GLint location = glGetUniformLocation(program_id_, name.c_str());
+
+    if (location < 0) {
+        return;
+    }
+
+    glUniform1i(location, value);
 }
 
 void ShaderProgram::SetMatrix4(const char *name,

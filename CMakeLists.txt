@@ -43,17 +43,13 @@ set(SHADER_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 
 file(MAKE_DIRECTORY "${SHADER_BUILD_DIR}")
 
-configure_file(
-    "${SHADER_DIR}/triangle.vert.glsl"
-    "${SHADER_BUILD_DIR}/triangle.vert.glsl"
-    COPYONLY
-)
-
-configure_file(
-    "${SHADER_DIR}/triangle.frag.glsl"
-    "${SHADER_BUILD_DIR}/triangle.frag.glsl"
-    COPYONLY
-)
+foreach(SHADER triangle.vert.glsl triangle.frag.glsl depth.vert.glsl depth.frag.glsl)
+    configure_file(
+        "${SHADER_DIR}/${SHADER}"
+        "${SHADER_BUILD_DIR}/${SHADER}"
+        COPYONLY
+    )
+endforeach()
 
 option(BUILD_APP "Build the application" OFF)
 

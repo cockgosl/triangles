@@ -1,6 +1,7 @@
 #include "triangle_renderer.hpp"
 
 #include <glad/gl.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -12,6 +13,26 @@
 
 namespace graphics {
 namespace {
+
+glm::mat4 GetLightSpaceMatrix(const ShadowConfig& config) {
+    const glm::mat4 light_view =
+        glm::lookAt(
+            config.light_position,
+            config.light_target,
+            config.light_up
+        );
+
+    const glm::mat4 light_projection = glm::ortho(
+        -config.projection_half_width,
+        config.projection_half_width,
+        -config.projection_half_height,
+        config.projection_half_height,
+        config.near_plane,
+        config.far_plane
+    );
+
+    return light_projection * light_view;
+}
 
 std::optional<std::string> ReadTextFile(const std::string &path) {
     std::ifstream file(path);
@@ -46,22 +67,84 @@ TriangleRenderer::~TriangleRenderer() noexcept {
     }
 }
 
-bool TriangleRenderer::Initialize(const std::vector<float> &vertices) {
+bool TriangleRenderer::InitializeShadowMap() {
+    glGenFramebuffers(1, &shadow_framebuffer_);
+    glGenTextures(1, &shadow_depth_texture_);
+
+    if (shadow_framebuffer_ == 0 || shadow_depth_texture_ == 0) {
+        std::cerr << "Failed to create shadow map resources.\n";
+        return false;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, shadow_depth_texture_);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, shadow_config_.shadow_map_size,
+                 shadow_config_.shadow_map_size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    const float border_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                           shadow_depth_texture_, 0);
+
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Shadow framebuffer is incomplete: " << status << '\n';
+
+        return false;
+    }
+
+    return true;
+}
+
+bool TriangleRenderer::Initialize(const std::vector<float> &vertices, const ShadowConfig& shadow_config) {
     auto vertex_source = ReadTextFile("shaders/triangle.vert.glsl");
 
     auto fragment_source = ReadTextFile("shaders/triangle.frag.glsl");
 
-    if (!vertex_source || !fragment_source)
+    auto depth_vertex_source = ReadTextFile("shaders/depth.vert.glsl");
+
+    auto depth_fragment_source = ReadTextFile("shaders/depth.frag.glsl");
+
+    if (!(vertex_source && fragment_source && depth_vertex_source &&
+          depth_fragment_source)) {
         return false;
+    }
+
+    shadow_config_ = shadow_config;
 
     auto shader_program =
         ShaderProgram::Create(*vertex_source, *fragment_source);
 
+    auto depth_shader_program =
+        ShaderProgram::Create(*depth_vertex_source, *depth_fragment_source);
+
+    if (!depth_shader_program) {
+        std::cerr << "Failed to create depth shader program.\n";
+        return false;
+    }
     if (!shader_program) {
         std::cerr << "Failed to create shader program.\n";
         return false;
     }
 
+    depth_shader_program_.emplace(std::move(*depth_shader_program));
     shader_program_.emplace(std::move(*shader_program));
 
     glGenVertexArrays(1, &vao_);
@@ -92,28 +175,76 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices) {
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
 
+    if (!InitializeShadowMap()) {
+        return false;
+    }
+
     return true;
 }
 
-void TriangleRenderer::Render(const glm::mat4 &view,
-                              const glm::mat4 &projection) const noexcept {
-    if (!shader_program_ || vao_ == 0) {
-        return;
-    }
+void TriangleRenderer::RenderShadowPass(
+    const glm::mat4 &model,
+    const glm::mat4 &light_space_matrix) const noexcept {
+    GLint viewport[4];
+    GLint previous_framebuffer = 0;
 
-    shader_program_->Use();
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previous_framebuffer);
 
-    const glm::mat4 model{1.0f};
+    glViewport(0, 0, shadow_config_.shadow_map_size, shadow_config_.shadow_map_size);
 
-    shader_program_->SetMatrix4("model", model);
-    shader_program_->SetMatrix4("view", view);
-    shader_program_->SetMatrix4("projection", projection);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    depth_shader_program_->Use();
+
+    depth_shader_program_->SetMatrix4("model", model);
+    depth_shader_program_->SetMatrix4("lightSpaceMatrix", light_space_matrix);
 
     glBindVertexArray(vao_);
 
     glDrawArrays(GL_TRIANGLES, 0, vertex_count_);
 
     glBindVertexArray(0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER,
+                      static_cast<GLuint>(previous_framebuffer));
+
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+}
+
+void TriangleRenderer::Render(const glm::mat4 &view,
+                              const glm::mat4 &projection) const noexcept {
+    if (!shader_program_ || !depth_shader_program_ || vao_ == 0 ||
+        shadow_framebuffer_ == 0) {
+        return;
+    }
+
+    const glm::mat4 model{1.0f};
+    const glm::mat4 light_space_matrix = GetLightSpaceMatrix(shadow_config_);
+
+    // First pass: generate the shadow map.
+    RenderShadowPass(model, light_space_matrix);
+
+    // Second pass: render the scene from the camera's point of view.
+    shader_program_->Use();
+
+    shader_program_->SetMatrix4("model", model);
+    shader_program_->SetMatrix4("view", view);
+    shader_program_->SetMatrix4("projection", projection);
+    shader_program_->SetMatrix4("lightSpaceMatrix", light_space_matrix);
+
+    // Bind the shadow map to texture unit 0.
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, shadow_depth_texture_);
+
+    shader_program_->SetInt("shadowMap", 0);
+
+    glBindVertexArray(vao_);
+    glDrawArrays(GL_TRIANGLES, 0, vertex_count_);
+    glBindVertexArray(0);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 } // namespace graphics
