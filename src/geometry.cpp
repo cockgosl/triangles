@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <limits>
 #include <optional>
 #include <ranges>
 #include <utility>
@@ -278,7 +277,7 @@ std::optional<std::vector<Vector3>> edge_plane_intersections(const Vector3& poin
     const double distance_2 = std::fabs(value_2);
     const double ratio = std::min(distance_1, distance_2) / std::max(distance_1, distance_2);
     const double parameter = distance_1 >= distance_2 ? 1.0 / (1.0 + ratio)
-                                                     : ratio / (1.0 + ratio);
+                                                      : ratio / (1.0 + ratio);
     if (!std::isfinite(parameter) || parameter < 0.0 || parameter > 1.0)
         return std::nullopt;
 
@@ -312,8 +311,8 @@ std::optional<double> line_parameter(const Vector3& point, const Line3& line) {
 
 // Collect parameters of the triangle's cut by the other triangle's plane.
 std::optional<std::vector<double>> triangle_line_parameters(const Triangle3& triangle,
-                                                             const Plane3& other_plane,
-                                                             const Line3& line) {
+                                                            const Plane3& other_plane,
+                                                            const Line3& line) {
     if (!is_valid_triangle(triangle) || !is_valid_plane(other_plane) || !is_valid_line(line))
         return std::nullopt;
 
@@ -351,7 +350,7 @@ std::optional<LineInterval> make_line_interval(const std::vector<double>& parame
 }
 
 std::optional<bool> intervals_overlap(const LineInterval& interval_1,
-                                       const LineInterval& interval_2) {
+                                      const LineInterval& interval_2) {
     const std::array bounds{interval_1.first, interval_1.second,
                             interval_2.first, interval_2.second};
     if (!std::ranges::all_of(bounds, [](double value) { return std::isfinite(value); }) ||
@@ -364,10 +363,10 @@ std::optional<bool> intervals_overlap(const LineInterval& interval_1,
 
 // Compare both triangle sections on the already computed common line.
 std::optional<bool> is_line_intersec(const Triangle3& triangle_1,
-                                      const Triangle3& triangle_2,
-                                      const Plane3& plane_1,
-                                      const Plane3& plane_2,
-                                      const Line3& line) {
+                                     const Triangle3& triangle_2,
+                                     const Plane3& plane_1,
+                                     const Plane3& plane_2,
+                                     const Line3& line) {
     const auto parameters_1 = triangle_line_parameters(triangle_1, plane_2, line);
     const auto parameters_2 = triangle_line_parameters(triangle_2, plane_1, line);
     if (!parameters_1 || !parameters_2)
