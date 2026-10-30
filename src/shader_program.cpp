@@ -239,6 +239,10 @@ ShaderProgram &ShaderProgram::operator=(ShaderProgram &&rhs) noexcept {
 }
 
 void ShaderProgram::SetInt(const char *name, int value) const noexcept {
+    if (name == nullptr) {
+        return;
+    }
+
     const GLint location = glGetUniformLocation(program_id_, name);
 
     if (location < 0) {

@@ -18,12 +18,12 @@ struct ShadowConfig {
     glm::vec3 light_target{0.0f, 0.0f, 0.0f};
     glm::vec3 light_up{0.0f, 1.0f, 0.0f};
 
-    float projection_half_width{1.6f};
-    float projection_half_height{1.6f};
-    float near_plane{2.5f};
-    float far_plane{6.5f};
+    float projection_padding{0.1f};
 
-    float bias{0.002f};
+    float min_bias{0.0005f};
+    float slope_bias_scale{0.002f};
+    float max_bias{0.01f};
+
     float strength{0.7f};
 
     float polygon_offset_factor{1.1f};

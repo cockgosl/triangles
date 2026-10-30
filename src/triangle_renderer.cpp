@@ -3,9 +3,12 @@
 #include <glad/gl.h>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -14,14 +17,54 @@
 namespace graphics {
 namespace {
 
-glm::mat4 GetLightSpaceMatrix(const ShadowConfig &config) {
+constexpr std::size_t kVertexComponentCount = 6;
+constexpr float kMinShadowNearPlane = 0.01f;
+
+std::optional<glm::mat4> GetLightSpaceMatrix(const std::vector<float> &vertices,
+                                             const ShadowConfig &config) {
     const glm::mat4 light_view = glm::lookAt(
         config.light_position, config.light_target, config.light_up);
 
+    glm::vec3 min_bounds{std::numeric_limits<float>::max()};
+
+    glm::vec3 max_bounds{std::numeric_limits<float>::lowest()};
+
+    // Calculate scene bounds in light space.
+    for (std::size_t index = 0; index < vertices.size();
+         index += kVertexComponentCount) {
+
+        const glm::vec4 light_position =
+            light_view * glm::vec4{vertices[index], vertices[index + 1],
+                                   vertices[index + 2], 1.0f};
+
+        const glm::vec3 position{light_position};
+
+        min_bounds = glm::min(min_bounds, position);
+        max_bounds = glm::max(max_bounds, position);
+    }
+
+    const glm::vec2 center{(min_bounds.x + max_bounds.x) * 0.5f,
+                           (min_bounds.y + max_bounds.y) * 0.5f};
+
+    const float width = max_bounds.x - min_bounds.x;
+    const float height = max_bounds.y - min_bounds.y;
+
+    // Use a square projection to preserve shadow map texel density.
+    const float half_extent =
+        std::max(width, height) * 0.5f + config.projection_padding;
+
+    const float near_plane = std::max(
+        kMinShadowNearPlane, -max_bounds.z - config.projection_padding);
+
+    const float far_plane = -min_bounds.z + config.projection_padding;
+
+    if (far_plane <= near_plane) {
+        return std::nullopt;
+    }
+
     const glm::mat4 light_projection = glm::ortho(
-        -config.projection_half_width, config.projection_half_width,
-        -config.projection_half_height, config.projection_half_height,
-        config.near_plane, config.far_plane);
+        center.x - half_extent, center.x + half_extent, center.y - half_extent,
+        center.y + half_extent, near_plane, far_plane);
 
     return light_projection * light_view;
 }
@@ -131,6 +174,15 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
         return false;
     }
 
+    if (shadow_config_.projection_padding <= 0.0f ||
+        shadow_config_.min_bias < 0.0f ||
+        shadow_config_.slope_bias_scale < 0.0f ||
+        shadow_config_.max_bias < shadow_config_.min_bias ||
+        shadow_config_.strength < 0.0f || shadow_config_.strength > 1.0f) {
+        std::cerr << "Invalid shadow configuration.\n";
+        return false;
+    }
+
     shadow_config_ = shadow_config;
 
     auto shader_program =
@@ -158,7 +210,10 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
 
     shader_program_->SetVec3("lightDirection", light_direction);
     shader_program_->SetInt("shadowMap", 0);
-    shader_program_->SetFloat("shadowBias", shadow_config_.bias);
+    shader_program_->SetFloat("minShadowBias", shadow_config_.min_bias);
+    shader_program_->SetFloat("slopeBiasScale",
+                              shadow_config_.slope_bias_scale);
+    shader_program_->SetFloat("maxShadowBias", shadow_config_.max_bias);
     shader_program_->SetFloat("shadowStrength", shadow_config_.strength);
 
     glGenVertexArrays(1, &vao_);
@@ -198,8 +253,16 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
     }
     const glm::mat4 model{1.0f};
 
-    light_space_matrix_ = GetLightSpaceMatrix(shadow_config_);
+    auto light_space_matrix = GetLightSpaceMatrix(vertices, shadow_config_);
 
+    if (!light_space_matrix) {
+        std::cerr << "Failed to calculate light space matrix.\n";
+        return false;
+    }
+
+    light_space_matrix_ = *light_space_matrix;
+
+    RenderShadowPass(model, light_space_matrix_);
     RenderShadowPass(model, light_space_matrix_);
 
     return true;
