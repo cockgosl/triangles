@@ -12,23 +12,22 @@
 namespace graphics {
 
 struct ShadowConfig {
-    // Shadow map settings.
     int shadow_map_size{2048};
 
-    // Directional light settings.
     glm::vec3 light_position{2.5f, 3.0f, 2.0f};
     glm::vec3 light_target{0.0f, 0.0f, 0.0f};
     glm::vec3 light_up{0.0f, 1.0f, 0.0f};
 
-    // Orthographic projection settings.
-    float projection_half_width{2.0f};
-    float projection_half_height{2.0f};
-    float near_plane{0.1f};
-    float far_plane{10.0f};
+    float projection_half_width{1.6f};
+    float projection_half_height{1.6f};
+    float near_plane{2.5f};
+    float far_plane{6.5f};
 
-    // Shadow calculation settings.
-    float bias{0.005f};
+    float bias{0.002f};
     float strength{0.7f};
+
+    float polygon_offset_factor{1.1f};
+    float polygon_offset_units{4.0f};
 };
 
 class TriangleRenderer final {
@@ -55,7 +54,8 @@ class TriangleRenderer final {
     TriangleRenderer(const TriangleRenderer &) = delete;
     TriangleRenderer &operator=(const TriangleRenderer &) = delete;
 
-    bool Initialize(const std::vector<float> &vertices, const ShadowConfig& shadow_config = {});
+    bool Initialize(const std::vector<float> &vertices,
+                    const ShadowConfig &shadow_config = {});
     void Render(const glm::mat4 &view,
                 const glm::mat4 &projection) const noexcept;
 };

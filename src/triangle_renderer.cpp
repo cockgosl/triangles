@@ -14,22 +14,14 @@
 namespace graphics {
 namespace {
 
-glm::mat4 GetLightSpaceMatrix(const ShadowConfig& config) {
-    const glm::mat4 light_view =
-        glm::lookAt(
-            config.light_position,
-            config.light_target,
-            config.light_up
-        );
+glm::mat4 GetLightSpaceMatrix(const ShadowConfig &config) {
+    const glm::mat4 light_view = glm::lookAt(
+        config.light_position, config.light_target, config.light_up);
 
     const glm::mat4 light_projection = glm::ortho(
-        -config.projection_half_width,
-        config.projection_half_width,
-        -config.projection_half_height,
-        config.projection_half_height,
-        config.near_plane,
-        config.far_plane
-    );
+        -config.projection_half_width, config.projection_half_width,
+        -config.projection_half_height, config.projection_half_height,
+        config.near_plane, config.far_plane);
 
     return light_projection * light_view;
 }
@@ -65,6 +57,16 @@ TriangleRenderer::~TriangleRenderer() noexcept {
         glDeleteVertexArrays(1, &vao_);
         vao_ = 0;
     }
+
+    if (shadow_depth_texture_ != 0) {
+        glDeleteTextures(1, &shadow_depth_texture_);
+        shadow_depth_texture_ = 0;
+    }
+
+    if (shadow_framebuffer_ != 0) {
+        glDeleteFramebuffers(1, &shadow_framebuffer_);
+        shadow_framebuffer_ = 0;
+    }
 }
 
 bool TriangleRenderer::InitializeShadowMap() {
@@ -78,8 +80,9 @@ bool TriangleRenderer::InitializeShadowMap() {
 
     glBindTexture(GL_TEXTURE_2D, shadow_depth_texture_);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, shadow_config_.shadow_map_size,
-                 shadow_config_.shadow_map_size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
+                 shadow_config_.shadow_map_size, shadow_config_.shadow_map_size,
+                 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -113,7 +116,8 @@ bool TriangleRenderer::InitializeShadowMap() {
     return true;
 }
 
-bool TriangleRenderer::Initialize(const std::vector<float> &vertices, const ShadowConfig& shadow_config) {
+bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
+                                  const ShadowConfig &shadow_config) {
     auto vertex_source = ReadTextFile("shaders/triangle.vert.glsl");
 
     auto fragment_source = ReadTextFile("shaders/triangle.frag.glsl");
@@ -146,6 +150,12 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices, const Shad
 
     depth_shader_program_.emplace(std::move(*depth_shader_program));
     shader_program_.emplace(std::move(*shader_program));
+
+    shader_program_->Use();
+
+    shader_program_->SetInt("shadowMap", 0);
+    shader_program_->SetFloat("shadowBias", shadow_config_.bias);
+    shader_program_->SetFloat("shadowStrength", shadow_config_.strength);
 
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
@@ -191,7 +201,8 @@ void TriangleRenderer::RenderShadowPass(
     glGetIntegerv(GL_VIEWPORT, viewport);
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previous_framebuffer);
 
-    glViewport(0, 0, shadow_config_.shadow_map_size, shadow_config_.shadow_map_size);
+    glViewport(0, 0, shadow_config_.shadow_map_size,
+               shadow_config_.shadow_map_size);
 
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -203,7 +214,14 @@ void TriangleRenderer::RenderShadowPass(
 
     glBindVertexArray(vao_);
 
+    glEnable(GL_POLYGON_OFFSET_FILL);
+
+    glPolygonOffset(shadow_config_.polygon_offset_factor,
+                    shadow_config_.polygon_offset_units);
+
     glDrawArrays(GL_TRIANGLES, 0, vertex_count_);
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
 
     glBindVertexArray(0);
 
@@ -237,8 +255,6 @@ void TriangleRenderer::Render(const glm::mat4 &view,
     // Bind the shadow map to texture unit 0.
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, shadow_depth_texture_);
-
-    shader_program_->SetInt("shadowMap", 0);
 
     glBindVertexArray(vao_);
     glDrawArrays(GL_TRIANGLES, 0, vertex_count_);
