@@ -21,6 +21,7 @@ public:
 
     Vector3 edge_AB() const;
     Vector3 edge_AC() const;
+    Vector3 edge_BC() const;
     Vector3 normal() const;
 };
 

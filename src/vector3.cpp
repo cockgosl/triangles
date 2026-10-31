@@ -12,7 +12,7 @@ constexpr double EPSILON = std::numeric_limits<double>::epsilon();
 /*  TODO - move && create into general_utils file
     inconsistent logic - in vector3.cpp (lines 30-32) comparison
     we should divide approx compare & precise compare */
-bool compare_f(double first, double second) {
+bool Vector3::compare_f(double first, double second) {
     return (std::fabs(first - second) < EPSILON);
 }
 
@@ -75,9 +75,24 @@ Vector3 Vector3::operator*(double scalar) const {
 }
 
 bool Vector3::operator==(const Vector3& vector) const {
-    return (x == vector.x &&
-            y == vector.y &&
-            z == vector.z);
+    return (compare_f(x, vector.x) &&
+            compare_f(y, vector.y) &&
+            compare_f(z, vector.z));
+}
+
+bool Vector3::valid_vec(const Vector3& vector) {
+    if (!isfinite_vec(vector)) return false;
+
+    return !(vector == Vector3(0.0, 0.0, 0.0));
+}
+
+bool Vector3::isfinite_vec(const Vector3& vector) {
+    if (!std::isfinite(vector.x) ||
+        !std::isfinite(vector.y) ||
+        !std::isfinite(vector.z))
+        return false;
+
+    return true;
 }
 
 } // namespace triangles
