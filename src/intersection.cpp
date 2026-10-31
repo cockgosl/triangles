@@ -1,74 +1,18 @@
-#include "geometry.hpp"
+#include "intersection.hpp"
+#include "plane_utils.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <optional>
 #include <ranges>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 namespace triangles {
 
 namespace {
-
-std::optional<double> parallel_coefficient_ratio(const Plane3& plane1,
-                                                const Plane3& plane2) {
-    const std::array coefficients{
-        std::pair{plane1.get_a(), plane2.get_a()},
-        std::pair{plane1.get_b(), plane2.get_b()},
-        std::pair{plane1.get_c(), plane2.get_c()},
-        std::pair{plane1.get_d(), plane2.get_d()}};
-
-    const bool all_finite = std::ranges::all_of(coefficients, [](const auto& pair) {
-        return std::isfinite(pair.first) && std::isfinite(pair.second);
-    });
-
-    if (!all_finite)
-        return std::nullopt;
-
-    const auto normal_coefficients = coefficients | std::views::take(3);
-    const bool first_has_normal = std::ranges::any_of(
-        normal_coefficients, [](const auto& pair) { return !Vector3::compare_f(pair.first, 0.0); });
-
-    const auto pivot = std::ranges::max_element(
-        normal_coefficients, {}, [](const auto& pair) {
-            return std::fabs(pair.second);
-        });
-
-    if (!first_has_normal || Vector3::compare_f(pivot->second, 0.0))
-        return std::nullopt;
-
-
-    // Use the largest normal coefficient as the only divisor
-    const double ratio = pivot->first / pivot->second;
-    if (!std::isfinite(ratio) || Vector3::compare_f(ratio, 0.0))
-        return std::nullopt;
-
-    for (const auto& [first, second] : normal_coefficients) {
-        const double scaled = ratio * second;
-        if (!std::isfinite(scaled) || !Vector3::compare_f(first, scaled))
-            return std::nullopt;
-
-    }
-    return ratio;
-}
-
-bool is_parallel(const Plane3& plane1,
-                 const Plane3& plane2) {
-    return parallel_coefficient_ratio(plane1, plane2).has_value();
-}
-
-bool is_coincide(const Plane3& plane1,
-                 const Plane3& plane2) {
-    const auto ratio = parallel_coefficient_ratio(plane1, plane2);
-    if (!ratio)
-        return false;
-
-    const double scaled_d = *ratio * plane2.get_d();
-    return std::isfinite(scaled_d) &&
-           Vector3::compare_f(plane1.get_d(), scaled_d);
-}
 
 double plane_value(const Plane3& plane, const Vector3& point) {
     return plane.get_a() * point.x +
@@ -85,12 +29,10 @@ std::optional<std::pair<Vector3, Vector3>> make_box(const Vector3& edge,
     if (!is_valid)
         return std::nullopt;
 
-    const double x_1 = std::min(point.x, endpoint.x);
-    const double y_1 = std::min(point.y, endpoint.y);
-    const double z_1 = std::min(point.z, endpoint.z);
-    const double x_2 = std::max(point.x, endpoint.x);
-    const double y_2 = std::max(point.y, endpoint.y);
-    const double z_2 = std::max(point.z, endpoint.z);
+    double x_1, x_2, y_1, y_2, z_1, z_2;
+    std::tie(x_1, x_2) = std::minmax(point.x, endpoint.x);
+    std::tie(y_1, y_2) = std::minmax(point.y, endpoint.y);
+    std::tie(z_1, z_2) = std::minmax(point.z, endpoint.z);
 
     Vector3 left_bottom{x_1, y_1, z_1};
     Vector3 right_top{x_2, y_2, z_2};
@@ -99,29 +41,23 @@ std::optional<std::pair<Vector3, Vector3>> make_box(const Vector3& edge,
 
 }
 
-// FIXME - reduce soo much coloms via using?
-// comparison
 bool quick_rejection(const Vector3& edge_1,
                      const Vector3& point_1,
                      const Vector3& edge_2,
                      const Vector3& point_2) {
-    std::optional<std::pair<Vector3, Vector3>> bound_box_1 = make_box(edge_1, point_1);
-    std::optional<std::pair<Vector3, Vector3>> bound_box_2 = make_box(edge_2, point_2);
+    auto bound_box_1 = make_box(edge_1, point_1);
+    auto bound_box_2 = make_box(edge_2, point_2);
     if (!bound_box_1 || !bound_box_2)
         return false;
 
-    bool x_interior = (bound_box_2->second.x >= bound_box_1->first.x);
-    bool y_interior = (bound_box_2->second.y >= bound_box_1->first.y);
-    bool z_interior = (bound_box_2->second.z >= bound_box_1->first.z);
-    bool x_endpoint = (bound_box_1->second.x >= bound_box_2->first.x);
-    bool y_endpoint = (bound_box_1->second.y >= bound_box_2->first.y);
-    bool z_endpoint = (bound_box_1->second.z >= bound_box_2->first.z);
+    const auto& [min1, max1] = *bound_box_1;
+    const auto& [min2, max2] = *bound_box_2;
 
-    return !(x_endpoint && y_endpoint && z_endpoint &&
-             x_interior && y_interior && z_interior);
+    return (max2.x < min1.x || max1.x < min2.x) ||
+           (max2.y < min1.y || max1.y < min2.y) ||
+           (max2.z < min1.z || max1.z < min2.z);
 }
 
-// FIXME - comparison
 bool check_dot_sign(const Vector3& edge_1,
                     const Vector3& point_1,
                     const Vector3& edge_2,
@@ -382,58 +318,7 @@ std::optional<bool> is_line_intersec(const Triangle3& triangle_1,
     return intervals_overlap(*interval_1, *interval_2);
 }
 
-
-
 } // namespace
-
-
-std::optional<Line3> Line3::Create(const Vector3& direction,
-                                   const Vector3& point) {
-    if (!(Vector3::valid_vec(direction)))
-        return std::nullopt;
-
-    if (!(Vector3::isfinite_vec(point)))
-        return std::nullopt;
-
-    return Line3(direction, point);
-}
-
-std::optional<Line3> Line3::Create(const Plane3& plane1,
-                                   const Plane3& plane2) {
-    if (!(Vector3::valid_vec(plane1.get_normal())))
-        return std::nullopt;
-
-    if (!(Vector3::valid_vec(plane2.get_normal())))
-        return std::nullopt;
-
-    if (is_parallel(plane1, plane2))
-        return std::nullopt;
-
-    return intersection(plane1, plane2);
-}
-
-std::optional<Line3> Line3::Create(const Vector3& direction) {
-    return Create(direction, Vector3{0.0, 0.0, 0.0});
-}
-
-Line3::Line3(const Vector3& direction,
-             const Vector3& point)
-        : direction_(direction.normalized()),
-          point_(point) {}
-
-Line3::~Line3() = default;
-
-bool Line3::operator==(const Line3& line) const { //FIXME
-    const Vector3 this_direction = direction_.normalized();
-    const Vector3 line_direction = line.direction_.normalized();
-
-    bool is_collinear = (this_direction.cross(line_direction) == Vector3(0.0, 0.0, 0.0));
-    Vector3 op_vec = (line.get_point() - point_).cross(line_direction); // "op" - abbreviation from operand
-    bool is_point_belong = !(Vector3::valid_vec(op_vec));
-
-    return (is_collinear && is_point_belong);
-}
-
 
 std::optional<Line3> intersection(const Plane3& plane1,
                                   const Plane3& plane2) {
@@ -453,82 +338,6 @@ std::optional<Line3> intersection(const Plane3& plane1,
     return Line3::Create(direction.normalized(), supp_point);
 }
 
-
-std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
-    if(triangle.is_degenerate())
-        return std::nullopt;
-
-    Vector3 edge3 = triangle.a;
-    Vector3 edge2 = triangle.edge_AB();
-    Vector3 edge1 = triangle.edge_AC();
-    Vector3 normal = edge1.cross(edge2);
-
-    return Plane3::Create(edge3, normal);
-}
-
-std::optional<Plane3> Plane3::Create(const Vector3& point1,
-                                     const Vector3& point2,
-                                     const Vector3& point3) {
-    Vector3 edge_1 = point1 - point3;
-    Vector3 edge_2 = point2 - point3;
-    Vector3 normal = edge_1.cross(edge_2);
-
-    return Plane3::Create(point3, normal);
-}
-
-std::optional<Plane3> Plane3::Create(const Vector3& point,
-                                     const Vector3& normal) {
-    if (!(Vector3::valid_vec(normal)))
-        return std::nullopt;
-
-    if (!(Vector3::isfinite_vec(point)))
-        return std::nullopt;
-
-    return Plane3(point, normal);
-}
-
-Plane3::Plane3(const Vector3& point,
-               const Vector3& normal) {
-    A_ = normal.normalized().x;
-    B_ = normal.normalized().y;
-    C_ = normal.normalized().z;
-    D_ = -(normal.normalized().dot(point));
-}
-
-Plane3::~Plane3() = default;
-
-Vector3 Plane3::get_normal() const {
-    return Vector3{A_, B_, C_};
-}
-
-
-Point2::Point2(const double x,
-               const double y)
-      : x_(x), y_(y) {}
-
-std::optional<Point2> Point2::Create(const double x,
-                                     const double y) {
-    if (!std::isfinite(x) ||
-        !std::isfinite(y))
-        return std::nullopt;
-
-    return Point2(x, y);
-}
-
-std::optional<Point2> Point2::Create(const Vector3& vector) {
-    const double x_coord = vector.x;
-    const double y_coord = vector.y;
-
-    if (!std::isfinite(x_coord) ||
-        !std::isfinite(y_coord))
-        return std::nullopt;
-
-    return Point2::Create(x_coord, y_coord);
-}
-
-Point2::~Point2() = default;
-
-
 std::optional<bool> intersection(const Triangle3& triangle_1,
                                  const Triangle3& triangle_2) {
     if (!is_valid_triangle(triangle_1) || !is_valid_triangle(triangle_2))
@@ -541,13 +350,13 @@ std::optional<bool> intersection(const Triangle3& triangle_1,
 
     const auto intersec_line = intersection(*plane_1, *plane_2);
     if (!intersec_line) {
-        if (is_coincide(*plane_1, *plane_2)) {
+        if (detail::is_coincide(*plane_1, *plane_2)) {
             if (is_triangle_inclusion(triangle_1, triangle_2))
                 return true;
             else if (is_edges_intersec(triangle_1, triangle_2))
                 return true;
             return false;
-        } else if (is_parallel(*plane_1, *plane_2))
+        } else if (detail::is_parallel(*plane_1, *plane_2))
             return false;
         else
             return std::nullopt;
