@@ -1,4 +1,4 @@
-#include "triangle_renderer.hpp"
+#include "graphics/triangle_renderer.hpp"
 
 #include <glad/gl.h>
 #include <glm/gtc/matrix_transform.hpp>

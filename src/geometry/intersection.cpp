@@ -1,5 +1,5 @@
-#include "intersection.hpp"
-#include "plane_utils.hpp"
+#include "geometry/intersection.hpp"
+#include "geometry/plane3.hpp"
 
 #include <algorithm>
 #include <array>
@@ -350,13 +350,13 @@ std::optional<bool> intersection(const Triangle3& triangle_1,
 
     const auto intersec_line = intersection(*plane_1, *plane_2);
     if (!intersec_line) {
-        if (detail::is_coincide(*plane_1, *plane_2)) {
+        if (Plane3::is_coincide(*plane_1, *plane_2)) {
             if (is_triangle_inclusion(triangle_1, triangle_2))
                 return true;
             else if (is_edges_intersec(triangle_1, triangle_2))
                 return true;
             return false;
-        } else if (detail::is_parallel(*plane_1, *plane_2))
+        } else if (Plane3::is_parallel(*plane_1, *plane_2))
             return false;
         else
             return std::nullopt;

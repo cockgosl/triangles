@@ -1,4 +1,4 @@
-#include "shader_program.hpp"
+#include "graphics/shader_program.hpp"
 
 #include <cstddef>
 #include <iostream>

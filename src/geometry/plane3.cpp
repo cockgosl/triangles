@@ -1,5 +1,4 @@
-#include "plane3.hpp"
-#include "plane_utils.hpp"
+#include "geometry/plane3.hpp"
 
 #include <algorithm>
 #include <array>
@@ -55,14 +54,13 @@ std::optional<double> parallel_coefficient_ratio(const Plane3& plane1,
 
 } // namespace
 
-namespace detail {
 
-bool is_parallel(const Plane3& plane1,
+bool Plane3::is_parallel(const Plane3& plane1,
                  const Plane3& plane2) {
     return parallel_coefficient_ratio(plane1, plane2).has_value();
 }
 
-bool is_coincide(const Plane3& plane1,
+bool Plane3::is_coincide(const Plane3& plane1,
                  const Plane3& plane2) {
     const auto ratio = parallel_coefficient_ratio(plane1, plane2);
     if (!ratio)
@@ -73,7 +71,6 @@ bool is_coincide(const Plane3& plane1,
            Vector3::compare_f(plane1.get_d(), scaled_d);
 }
 
-} // namespace detail
 
 std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
     if(triangle.is_degenerate())

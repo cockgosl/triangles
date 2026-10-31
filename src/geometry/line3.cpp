@@ -1,6 +1,5 @@
-#include "line3.hpp"
-#include "intersection.hpp"
-#include "plane_utils.hpp"
+#include "geometry/line3.hpp"
+#include "geometry/intersection.hpp"
 
 namespace triangles {
 
@@ -23,7 +22,7 @@ std::optional<Line3> Line3::Create(const Plane3& plane1,
     if (!(Vector3::valid_vec(plane2.get_normal())))
         return std::nullopt;
 
-    if (detail::is_parallel(plane1, plane2))
+    if (Plane3::is_parallel(plane1, plane2))
         return std::nullopt;
 
     return intersection(plane1, plane2);

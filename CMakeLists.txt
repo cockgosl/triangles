@@ -23,14 +23,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SRCS
-    src/vector3.cpp
-    src/triangle.cpp
-    src/generator.cpp
-    src/plane3.cpp
-    src/line3.cpp
-    src/point2.cpp
-    src/intersection.cpp)
-    src/camera.cpp)
+    src/geometry/vector3.cpp
+    src/geometry/triangle.cpp
+    src/geometry/generator.cpp
+    src/geometry/plane3.cpp
+    src/geometry/line3.cpp
+    src/geometry/point2.cpp
+    src/geometry/intersection.cpp
+    src/graphics/camera.cpp)
 
 add_library(glad STATIC third_party/glad/src/gl.c)
 add_library(triangles_lib STATIC ${SRCS})
@@ -57,10 +57,10 @@ if(BUILD_APP)
     add_executable(
         triangles.out
         src/main.cpp
-        src/application.cpp
-        src/triangle_renderer.cpp
-        src/glfw_window.cpp
-        src/shader_program.cpp
+        src/graphics/application.cpp
+        src/graphics/triangle_renderer.cpp
+        src/graphics/glfw_window.cpp
+        src/graphics/shader_program.cpp
     )
 
     target_link_libraries(

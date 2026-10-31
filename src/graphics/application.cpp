@@ -1,8 +1,8 @@
-#include "application.hpp"
+#include "graphics/application.hpp"
 
-#include "generator.hpp"
-#include "triangle.hpp"
-#include "vector3.hpp"
+#include "geometry/generator.hpp"
+#include "geometry/triangle.hpp"
+#include "geometry/vector3.hpp"
 
 #include <glad/gl.h>
 
