@@ -1,52 +1,64 @@
-#pragma once
+#ifndef GENERATOR_HPP_
+#define GENERATOR_HPP_
 
+#include "aabb.hpp"
 #include "triangle.hpp"
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <random>
 #include <vector>
 
 namespace triangles {
 
+struct GeneratorConfig {
+    AABB domain;
 
-struct GeneratorDefaults {
-    static constexpr double   r_max               = 1000.0;
-    static constexpr double   expectation_divisor = 100.0;
-    static constexpr double   stddev_divisor      = 300.0;
-    static constexpr unsigned triangles_count     = 4188;
+    double target_max_edge_length{1.0};
+    double relative_size_variation{0.1};
+
+    double min_shape_quality{0.1};
+
+    std::uint32_t seed{5489u};
+
+    std::size_t max_shape_attempts{1000};
 };
 
+struct GeneratedTriangle {
+    Triangle3 triangle;
+    AABB bounds;
+};
 
 class Generator {
-private:
-    double r_max_;
-    double expectation_;
-    double stddev_;
+  private:
+    AABB domain_;
+    AABB centroid_domain_;
+
+    double min_edge_length_;
+    double max_edge_length_;
+    double min_shape_quality_;
+
+    std::size_t max_shape_attempts_;
+
     std::mt19937 gen_;
 
-    Generator(double r_max,
-              double expectation,
-              double dispersion);
+    Generator(const GeneratorConfig &config, const AABB &centroid_domain,
+              double min_edge_length, double max_edge_length);
 
-public:
-    static std::optional<Generator> Create();
-    static std::optional<Generator> Create(double r_max);
-    static std::optional<Generator> Create(double r_max,
-                                           double expectation);
-    static std::optional<Generator> Create(double r_max,
-                                           double expectation,
-                                           double stddev);
+    std::optional<Triangle3> generate_local_triangle();
+    std::optional<Triangle3>
+    generate_random_orientation(const Triangle3 &triangle);
 
-    double get_r_max()  const { return r_max_; }
-    double get_expect() const { return expectation_; }
-    double get_stddev() const { return stddev_; }
+  public:
+    static std::optional<Generator> Create(const GeneratorConfig &config);
 
-    std::optional<Vector3> generate_vector();
-    std::optional<Vector3> generate_vector(double length);
-    double generate_length();
+    std::optional<GeneratedTriangle> generate_triangle();
 
-    std::optional<Triangle3> generate_triangle();
-    std::optional<std::vector<Triangle3>> generate_triangles(unsigned count = GeneratorDefaults::triangles_count);
+    std::optional<std::vector<GeneratedTriangle>>
+    generate_triangles(std::size_t count);
 };
 
 } // namespace triangles
+
+#endif // GENERATOR_HPP_

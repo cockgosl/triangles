@@ -23,6 +23,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SRCS
+    src/geometry/aabb.cpp
     src/geometry/vector3.cpp
     src/geometry/triangle.cpp
     src/geometry/generator.cpp

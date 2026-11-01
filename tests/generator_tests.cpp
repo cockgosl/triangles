@@ -2,104 +2,128 @@
 
 #include "geometry/generator.hpp"
 
-#include <cmath>
-#include <limits>
+#include <algorithm>
 
+using triangles::AABB;
 using triangles::Generator;
+using triangles::GeneratorConfig;
+using triangles::Vector3;
 
-TEST(GeneratorTests, ReturnsRequestedCount) {
-    auto generator = Generator::Create();
+namespace {
 
-    ASSERT_TRUE(generator.has_value());
+AABB MakeDomain() {
+    const auto domain = AABB::Create(
+        Vector3{-5.0, -5.0, -5.0},
+        Vector3{5.0, 5.0, 5.0}
+    );
 
-    auto triangles = generator->generate_triangles(10);
-
-    ASSERT_TRUE(triangles.has_value());
-    EXPECT_EQ(triangles->size(), 10u);
-
-    auto empty_result = generator->generate_triangles(0);
-
-    ASSERT_TRUE(empty_result.has_value());
-    EXPECT_TRUE(empty_result->empty());
+    return *domain;
 }
 
-TEST(GeneratorTests, RejectsInvalidParameters) {
-    EXPECT_FALSE(Generator::Create(-1.0).has_value());
-    EXPECT_FALSE(Generator::Create(0.0).has_value());
-    EXPECT_FALSE(Generator::Create(1001.0).has_value());
-
-    const double nan = std::numeric_limits<double>::quiet_NaN();
-    const double infinity = std::numeric_limits<double>::infinity();
-
-    EXPECT_FALSE(Generator::Create(nan).has_value());
-    EXPECT_FALSE(Generator::Create(infinity).has_value());
-
-    EXPECT_FALSE(Generator::Create(10.0, nan).has_value());
-    EXPECT_FALSE(Generator::Create(10.0, 1.0, infinity).has_value());
+GeneratorConfig MakeConfig() {
+    return GeneratorConfig{
+        .domain = MakeDomain(),
+        .target_max_edge_length = 1.0,
+        .relative_size_variation = 0.1,
+        .min_shape_quality = 0.1,
+        .seed = 42u,
+        .max_shape_attempts = 1000
+    };
 }
 
-TEST(GeneratorTests, GeneratedVectorHasRequestedLength) {
-    auto generator = Generator::Create(10.0, 1.0, 0.5);
+}  // namespace
 
-    ASSERT_TRUE(generator.has_value());
+TEST(GeneratorTests, CreatesWithValidConfig) {
+    const auto generator = Generator::Create(MakeConfig());
 
-    constexpr double kLength = 3.0;
-    constexpr int kSamples = 100;
+    EXPECT_TRUE(generator.has_value());
+}
 
-    for (int i = 0; i < kSamples; ++i) {
-        auto vector = generator->generate_vector(kLength);
+TEST(GeneratorTests, RejectsInvalidTargetLength) {
+    auto config = MakeConfig();
+    config.target_max_edge_length = -1.0;
 
-        ASSERT_TRUE(vector.has_value());
-        EXPECT_TRUE(std::isfinite(vector->length()));
-        EXPECT_NEAR(vector->length(), kLength, 1e-12);
+    EXPECT_FALSE(Generator::Create(config));
+}
+
+TEST(GeneratorTests, RejectsInvalidSizeVariation) {
+    auto config = MakeConfig();
+    config.relative_size_variation = 1.0;
+
+    EXPECT_FALSE(Generator::Create(config));
+}
+
+TEST(GeneratorTests, RejectsInvalidShapeQuality) {
+    auto config = MakeConfig();
+    config.min_shape_quality = 0.0;
+
+    EXPECT_FALSE(Generator::Create(config));
+}
+
+TEST(GeneratorTests, RejectsZeroAttempts) {
+    auto config = MakeConfig();
+    config.max_shape_attempts = 0;
+
+    EXPECT_FALSE(Generator::Create(config));
+}
+
+TEST(GeneratorTests, RejectsDomainTooSmall) {
+    auto config = MakeConfig();
+
+    const auto domain = AABB::Create(
+        Vector3{0.0, 0.0, 0.0},
+        Vector3{0.1, 0.1, 0.1}
+    );
+
+    ASSERT_TRUE(domain.has_value());
+    config.domain = *domain;
+
+    EXPECT_FALSE(Generator::Create(config));
+}
+
+TEST(GeneratorTests, GeneratesTrianglesInsideDomain) {
+    const auto domain = AABB::Create(
+        Vector3{-5.0, -5.0, -5.0},
+        Vector3{5.0, 5.0, 5.0}
+    );
+
+    ASSERT_TRUE(domain);
+
+    const GeneratorConfig config{
+        .domain = *domain,
+        .target_max_edge_length = 1.0,
+        .relative_size_variation = 0.1,
+        .min_shape_quality = 0.1,
+        .seed = 42u,
+        .max_shape_attempts = 1000
+    };
+
+    auto generator = Generator::Create(config);
+
+    ASSERT_TRUE(generator);
+
+    auto generated = generator->generate_triangles(100);
+
+    ASSERT_TRUE(generated);
+    ASSERT_EQ(generated->size(), 100u);
+
+    for (const auto& item : *generated) {
+        EXPECT_TRUE(domain->contains(item.bounds));
+
+        const auto& triangle = item.triangle;
+
+        const double ab = triangle.edge_AB().length();
+        const double ac = triangle.edge_AC().length();
+        const double bc = triangle.edge_BC().length();
+
+        const double max_edge = std::max({ab, ac, bc});
+
+        EXPECT_GE(max_edge, 0.9 - 1e-10);
+        EXPECT_LE(max_edge, 1.1 + 1e-10);
+
+        const double quality =
+            2.0 * triangle.area() / (max_edge * max_edge);
+
+        EXPECT_GE(quality, config.min_shape_quality);
     }
-}
-
-TEST(GeneratorTests, GeneratedDirectionsAreApproximatelyUniform) {
-    auto generator = Generator::Create(10.0, 1.0, 0.5);
-
-    ASSERT_TRUE(generator.has_value());
-
-    constexpr double kLength = 3.0;
-    constexpr int kSamples = 20000;
-
-    double sum_x = 0.0;
-    double sum_y = 0.0;
-    double sum_z = 0.0;
-
-    double sum_x_squared = 0.0;
-    double sum_y_squared = 0.0;
-    double sum_z_squared = 0.0;
-
-    for (int i = 0; i < kSamples; ++i) {
-        auto vector = generator->generate_vector(kLength);
-
-        ASSERT_TRUE(vector.has_value());
-
-        sum_x += vector->x;
-        sum_y += vector->y;
-        sum_z += vector->z;
-
-        sum_x_squared += vector->x * vector->x;
-        sum_y_squared += vector->y * vector->y;
-        sum_z_squared += vector->z * vector->z;
-    }
-
-    const double mean_x = sum_x / kSamples;
-    const double mean_y = sum_y / kSamples;
-    const double mean_z = sum_z / kSamples;
-
-    const double expected_squared_coordinate =
-        kLength * kLength / 3.0;
-
-    EXPECT_NEAR(mean_x, 0.0, 0.08);
-    EXPECT_NEAR(mean_y, 0.0, 0.08);
-    EXPECT_NEAR(mean_z, 0.0, 0.08);
-
-    EXPECT_NEAR(
-        sum_x_squared / kSamples, expected_squared_coordinate, 0.12);
-    EXPECT_NEAR(
-        sum_y_squared / kSamples, expected_squared_coordinate, 0.12);
-    EXPECT_NEAR(
-        sum_z_squared / kSamples, expected_squared_coordinate, 0.12);
 }
