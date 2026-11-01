@@ -1,6 +1,9 @@
-#pragma once
-
+#ifndef TRIANGLE3_HPP_
+#define TRIANGLE3_HPP_
 #include "vector3.hpp"
+#include "aabb.hpp"
+
+#include <optional>
 
 namespace triangles {
 
@@ -23,6 +26,9 @@ public:
     Vector3 edge_AC() const;
     Vector3 edge_BC() const;
     Vector3 normal() const;
+    std::optional<AABB> bounds() const;
 };
 
 } // namespace triangles
+
+#endif //TRIANGLE3_HPP_

@@ -1,7 +1,9 @@
 #include "geometry/triangle.hpp"
 
 #include <limits>
-#include <cmath>
+#include <algorithm>
+#include <array>
+#include <optional>
 
 namespace triangles {
 
@@ -37,6 +39,30 @@ Vector3 Triangle3::edge_BC() const {
 
 Vector3 Triangle3::normal() const {
     return edge_AB().cross(edge_AC()).normalized();
+}
+
+std::optional<AABB> Triangle3::bounds() const {
+    const std::array vertices{a, b, c};
+
+    for (const auto& vertex : vertices) {
+        if (!Vector3::isfinite_vec(vertex)) {
+            return std::nullopt;
+        }
+    }
+
+    const Vector3 min{
+        std::min({a.x, b.x, c.x}),
+        std::min({a.y, b.y, c.y}),
+        std::min({a.z, b.z, c.z})
+    };
+
+    const Vector3 max{
+        std::max({a.x, b.x, c.x}),
+        std::max({a.y, b.y, c.y}),
+        std::max({a.z, b.z, c.z})
+    };
+
+    return AABB::Create(min, max);
 }
 
 
