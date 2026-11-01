@@ -78,29 +78,6 @@ ConvertTrianglesToVertices(const std::vector<GeneratedTriangle> &triangles,
 
     constexpr std::array<float, 3> kIntersectionColor{0.0f, 0.2f, 1.0f};
 
-    double max_abs_coordinate = 0.0;
-
-    for (const auto &generated : triangles) {
-        const auto &triangle = generated.triangle;
-
-        const Vector3 *points[] = {&triangle.a, &triangle.b, &triangle.c};
-
-        auto maxima =
-            points | std::views::transform([](const Vector3 *point) {
-                return std::max({std::abs(point->x), std::abs(point->y),
-                                 std::abs(point->z)});
-            });
-
-        max_abs_coordinate =
-            std::max(max_abs_coordinate, std::ranges::max(maxima));
-    }
-
-    double scale = 1.0;
-
-    if (max_abs_coordinate > kMaxCoordinateMagnitude) {
-        scale = kMaxCoordinateMagnitude / max_abs_coordinate;
-    }
-
     std::vector<float> vertices;
     vertices.reserve(triangles.size() * 27);
 
@@ -117,9 +94,9 @@ ConvertTrianglesToVertices(const std::vector<GeneratedTriangle> &triangles,
         const Vector3 *points[] = {&triangle.a, &triangle.b, &triangle.c};
 
         for (const Vector3 *point : points) {
-            vertices.push_back(static_cast<float>(point->x * scale));
-            vertices.push_back(static_cast<float>(point->y * scale));
-            vertices.push_back(static_cast<float>(point->z * scale));
+            vertices.push_back(static_cast<float>(point->x));
+            vertices.push_back(static_cast<float>(point->y));
+            vertices.push_back(static_cast<float>(point->z));
 
             vertices.push_back(static_cast<float>(normal.x));
             vertices.push_back(static_cast<float>(normal.y));
@@ -160,21 +137,19 @@ bool Application::Initialize() {
     window_.emplace(std::move(*window));
     window_->SetCursorCaptured(true);
 
-    const auto domain =
-        AABB::Create(Vector3{-2.0, -2.0, -2.0}, Vector3{2.0, 2.0, 2.0});
+    const auto domain = AABB::Create(Vector3{-2000.0, -2000.0, -2000.0},
+                                     Vector3{2000.0, 2000.0, 2000.0});
 
     if (!domain) {
         std::cerr << "Failed to create generation domain.\n";
         return false;
     }
-
     const GeneratorConfig generator_config{.domain = *domain,
-                                           .target_max_edge_length = 0.8,
-                                           .relative_size_variation = 0.1,
+                                           .target_max_edge_length = 120.0,
+                                           .relative_size_variation = 0.15,
                                            .min_shape_quality = 0.1,
                                            .seed = 42u,
                                            .max_shape_attempts = 1000};
-
     auto generator = Generator::Create(generator_config);
 
     if (!generator) {
