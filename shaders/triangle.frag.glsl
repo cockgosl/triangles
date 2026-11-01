@@ -2,6 +2,7 @@
 
 in vec4 fragPosLightSpace;
 in vec3 fragNormal;
+in vec3 fragColor;
 
 uniform sampler2D shadowMap;
 uniform vec3 lightDirection;
@@ -19,70 +20,70 @@ const float kPcfSampleCount =
 const float kAmbientStrength = 0.2;
 
 float CalculateShadow(vec3 normal, vec3 lightDir) {
-    vec3 projectedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  vec3 projectedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 
-    projectedCoords = projectedCoords * 0.5 + 0.5;
+  projectedCoords = projectedCoords * 0.5 + 0.5;
 
-    if (projectedCoords.x < 0.0 || projectedCoords.x > 1.0 ||
-        projectedCoords.y < 0.0 || projectedCoords.y > 1.0 ||
-        projectedCoords.z < 0.0 || projectedCoords.z > 1.0) {
-        return 0.0;
+  if (projectedCoords.x < 0.0 || projectedCoords.x > 1.0 ||
+      projectedCoords.y < 0.0 || projectedCoords.y > 1.0 ||
+      projectedCoords.z < 0.0 || projectedCoords.z > 1.0) {
+    return 0.0;
+  }
+
+  float currentDepth = projectedCoords.z;
+
+  float cosTheta = abs(dot(normal, lightDir));
+
+  float sinTheta = sqrt(max(1.0 - cosTheta * cosTheta, 0.0));
+
+  float slope = sinTheta / max(cosTheta, 0.05);
+
+  float bias = clamp(minShadowBias + slopeBiasScale * slope, minShadowBias,
+                     maxShadowBias);
+
+  vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
+
+  float shadow = 0.0;
+
+  for (int x = -kPcfRadius; x <= kPcfRadius; ++x) {
+    for (int y = -kPcfRadius; y <= kPcfRadius; ++y) {
+      vec2 sampleCoords = projectedCoords.xy + vec2(x, y) * texelSize;
+
+      float closestDepth = texture(shadowMap, sampleCoords).r;
+
+      if (currentDepth - bias > closestDepth) {
+        shadow += 1.0;
+      }
     }
+  }
 
-    float currentDepth = projectedCoords.z;
-
-    float cosTheta = abs(dot(normal, lightDir));
-
-    float sinTheta = sqrt(max(1.0 - cosTheta * cosTheta, 0.0));
-
-    float slope = sinTheta / max(cosTheta, 0.05);
-
-    float bias = clamp(minShadowBias + slopeBiasScale * slope, minShadowBias,
-                       maxShadowBias);
-
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
-
-    float shadow = 0.0;
-
-    for (int x = -kPcfRadius; x <= kPcfRadius; ++x) {
-        for (int y = -kPcfRadius; y <= kPcfRadius; ++y) {
-            vec2 sampleCoords = projectedCoords.xy + vec2(x, y) * texelSize;
-
-            float closestDepth = texture(shadowMap, sampleCoords).r;
-
-            if (currentDepth - bias > closestDepth) {
-                shadow += 1.0;
-            }
-        }
-    }
-
-    return shadow / kPcfSampleCount;
+  return shadow / kPcfSampleCount;
 }
 
 void main() {
-    vec3 baseColor = vec3(1.0, 0.5, 0.2);
+  vec3 baseColor = fragColor;
 
-    vec3 geometricNormal = normalize(fragNormal);
+  vec3 geometricNormal = normalize(fragNormal);
 
-    vec3 shadingNormal = geometricNormal;
+  vec3 shadingNormal = geometricNormal;
 
-    if (!gl_FrontFacing) {
-        shadingNormal = -shadingNormal;
-    }
+  if (!gl_FrontFacing) {
+    shadingNormal = -shadingNormal;
+  }
 
-    vec3 lightDir = normalize(lightDirection);
+  vec3 lightDir = normalize(lightDirection);
 
-    // Lambert diffuse lighting.
-    float diffuse = max(dot(shadingNormal, lightDir), 0.0);
+  // Lambert diffuse lighting.
+  float diffuse = max(dot(shadingNormal, lightDir), 0.0);
 
-    // Calculate shadow visibility using the geometric normal.
-    float shadow = CalculateShadow(geometricNormal, lightDir);
+  // Calculate shadow visibility using the geometric normal.
+  float shadow = CalculateShadow(geometricNormal, lightDir);
 
-    float visibility = 1.0 - shadow * shadowStrength;
+  float visibility = 1.0 - shadow * shadowStrength;
 
-    // Combine ambient and diffuse lighting.
-    float illumination =
-        kAmbientStrength + (1.0 - kAmbientStrength) * diffuse * visibility;
+  // Combine ambient and diffuse lighting.
+  float illumination =
+      kAmbientStrength + (1.0 - kAmbientStrength) * diffuse * visibility;
 
-    fragment_color = vec4(baseColor * illumination, 1.0);
+  fragment_color = vec4(baseColor * illumination, 1.0);
 }
