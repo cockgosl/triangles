@@ -2,6 +2,7 @@
 
 #include "geometry/generator.hpp"
 #include "geometry/intersection.hpp"
+#include "geometry/octotree.hpp"
 #include "geometry/triangle.hpp"
 #include "geometry/vector3.hpp"
 
@@ -22,23 +23,37 @@ namespace {
 
 constexpr double kMaxCoordinateMagnitude = 0.9;
 
-std::optional<std::vector<bool>>
-FindIntersectingTriangles(const std::vector<GeneratedTriangle> &triangles) {
-    std::vector<bool> intersecting(triangles.size(), false);
+std::optional<std::vector<bool>> FindIntersectingTriangles(
+    const std::vector<GeneratedTriangle> &generated_triangles,
+    const AABB &domain, const OctotreeConfig &config) {
+    auto tree = Octotree::Create(domain, config);
 
-    for (std::size_t i = 0; i < triangles.size(); ++i) {
-        for (std::size_t j = i + 1; j < triangles.size(); ++j) {
-            if (!triangles[i].bounds.intersects(triangles[j].bounds)) {
+    if (!tree.has_value()) {
+        return std::nullopt;
+    }
+
+    const std::size_t count = generated_triangles.size();
+
+    for (std::size_t i = 0; i < count; ++i) {
+        if (!tree->insert(i, generated_triangles[i].bounds)) {
+            return std::nullopt;
+        }
+    }
+
+    std::vector<bool> intersecting(count, false);
+
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto candidates = tree->query(generated_triangles[i].bounds);
+
+        for (const std::size_t j : candidates) {
+            if (j <= i) {
                 continue;
             }
 
-            const auto result =
-                intersection(triangles[i].triangle, triangles[j].triangle);
+            const auto result = intersection(generated_triangles[i].triangle,
+                                             generated_triangles[j].triangle);
 
-            if (!result) {
-                std::cerr << "Failed to determine intersection between "
-                          << "triangles " << i << " and " << j << ".\n";
-
+            if (!result.has_value()) {
                 return std::nullopt;
             }
 
@@ -55,7 +70,9 @@ FindIntersectingTriangles(const std::vector<GeneratedTriangle> &triangles) {
 std::vector<float>
 ConvertTrianglesToVertices(const std::vector<GeneratedTriangle> &triangles,
                            const std::vector<bool> &intersecting) {
-    if (triangles.size() != intersecting.size()) return {};
+    if (triangles.size() != intersecting.size()) {
+        return {};
+    }
 
     constexpr std::array<float, 3> kDefaultColor{1.0f, 0.5f, 0.2f};
 
@@ -80,24 +97,26 @@ ConvertTrianglesToVertices(const std::vector<GeneratedTriangle> &triangles,
 
     double scale = 1.0;
 
-    if (max_abs_coordinate > kMaxCoordinateMagnitude)
+    if (max_abs_coordinate > kMaxCoordinateMagnitude) {
         scale = kMaxCoordinateMagnitude / max_abs_coordinate;
+    }
 
     std::vector<float> vertices;
-    vertices.reserve(triangles.size() *
-                     27); // the amount of parameters for 1 triangle
+    vertices.reserve(triangles.size() * 27);
 
     for (std::size_t i = 0; i < triangles.size(); ++i) {
         const auto &triangle = triangles[i].triangle;
 
-        const Vector3 *points[] = {&triangle.a, &triangle.b, &triangle.c};
-
-        const Vector3 normal = triangle.normal();
+        const Vector3 normal =
+            ((triangle.b - triangle.a).cross(triangle.c - triangle.a))
+                .normalized();
 
         const auto &color =
             intersecting[i] ? kIntersectionColor : kDefaultColor;
 
-        for (const auto *point : points) {
+        const Vector3 *points[] = {&triangle.a, &triangle.b, &triangle.c};
+
+        for (const Vector3 *point : points) {
             vertices.push_back(static_cast<float>(point->x * scale));
             vertices.push_back(static_cast<float>(point->y * scale));
             vertices.push_back(static_cast<float>(point->z * scale));
@@ -170,16 +189,16 @@ bool Application::Initialize() {
         std::cerr << "Failed to generate triangles.\n";
         return false;
     }
+    auto intersection_results = triangles::FindIntersectingTriangles(
+        *generated_triangles, *domain,
+        triangles::OctotreeConfig{.max_depth = 8, .max_objects_per_node = 8});
 
-    auto intersecting = FindIntersectingTriangles(*generated_triangles);
-
-    if (!intersecting) {
-        std::cerr << "Failed to detect triangle intersections.\n";
+    if (!intersection_results.has_value()) {
         return false;
     }
 
-    const std::vector<float> vertices =
-        ConvertTrianglesToVertices(*generated_triangles, *intersecting);
+    auto vertices =
+        ConvertTrianglesToVertices(*generated_triangles, *intersection_results);
 
     if (!renderer_.Initialize(vertices)) {
         std::cerr << "Failed to initialize renderer.\n";
