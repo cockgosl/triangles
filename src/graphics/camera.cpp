@@ -8,9 +8,7 @@
 
 namespace graphics {
 void Camera::SetAspectRatio(float aspect_ratio) {
-    if (!std::isfinite(aspect_ratio) || aspect_ratio <= 0.0f) {
-        return;
-    }
+    if (!std::isfinite(aspect_ratio) || aspect_ratio <= 0.0f) return;
 
     aspect_ratio_ = aspect_ratio;
 }
@@ -39,9 +37,7 @@ void Camera::Rotate(float x_offset, float y_offset) {
 }
 
 void Camera::Move(CameraMovement direction, float delta_time) {
-    if (delta_time <= 0.0f) {
-        return;
-    }
+    if (delta_time <= 0.0f) return;
 
     const float distance = config_.movement_speed * delta_time;
 

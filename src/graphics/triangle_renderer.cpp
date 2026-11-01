@@ -58,9 +58,7 @@ std::optional<glm::mat4> GetLightSpaceMatrix(const std::vector<float> &vertices,
 
   const float far_plane = -min_bounds.z + config.projection_padding;
 
-  if (far_plane <= near_plane) {
-    return std::nullopt;
-  }
+  if (far_plane <= near_plane) return std::nullopt;
 
   const glm::mat4 light_projection = glm::ortho(
       center.x - half_extent, center.x + half_extent, center.y - half_extent,

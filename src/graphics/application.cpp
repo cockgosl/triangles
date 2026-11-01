@@ -15,6 +15,7 @@
 #include <optional>
 #include <utility>
 #include <vector>
+#include <ranges>
 
 namespace triangles {
 namespace {
@@ -48,11 +49,7 @@ FindIntersectingTriangles(const std::vector<Triangle3> &triangles) {
 std::vector<float>
 ConvertTrianglesToVertices(const std::vector<Triangle3> &triangles,
                            const std::vector<bool> &intersecting) {
-  if (triangles.size() != intersecting.size()) {
-    return {};
-  }
-
-  constexpr double kMaxCoordinateMagnitude = 0.9;
+  if (triangles.size() != intersecting.size()) return {};
 
   constexpr std::array<float, 3> kDefaultColor{1.0f, 0.5f, 0.2f};
 
@@ -60,23 +57,36 @@ ConvertTrianglesToVertices(const std::vector<Triangle3> &triangles,
 
   double max_abs_coordinate = 0.0;
 
-  for (const auto &triangle : triangles) {
-    const Vector3 *points[] = {&triangle.a, &triangle.b, &triangle.c};
-
-    for (const auto *point : points) {
-      max_abs_coordinate = std::max({max_abs_coordinate, std::abs(point->x),
-                                     std::abs(point->y), std::abs(point->z)});
-    }
+  for (const auto& triangle : triangles) {
+     const Vector3* points[] = {
+         &triangle.a,
+         &triangle.b,
+         &triangle.c
+     };
+ 
+     auto maxima = points | std::views::transform(
+         [](const Vector3* point) {
+             return std::max({
+                 std::abs(point->x),
+                 std::abs(point->y),
+                 std::abs(point->z)
+             });
+         }
+     );
+ 
+     max_abs_coordinate = std::max(
+         max_abs_coordinate,
+         std::ranges::max(maxima)
+     );
   }
 
   double scale = 1.0;
 
-  if (max_abs_coordinate > kMaxCoordinateMagnitude) {
+  if (max_abs_coordinate > kMaxCoordinateMagnitude)
     scale = kMaxCoordinateMagnitude / max_abs_coordinate;
-  }
 
   std::vector<float> vertices;
-  vertices.reserve(triangles.size() * 27);
+  vertices.reserve(triangles.size() * 27); //the amount of parameters for 1 triangle
 
   for (std::size_t i = 0; i < triangles.size(); ++i) {
     const auto &triangle = triangles[i];
@@ -185,21 +195,17 @@ void Application::ProcessInput(float delta_time) {
 
   camera_.Rotate(static_cast<float>(x_offset), static_cast<float>(y_offset));
 
-  if (window_->IsKeyPressed(::graphics::Key::kW)) {
+  if (window_->IsKeyPressed(::graphics::Key::kW))
     camera_.Move(::graphics::CameraMovement::kForward, delta_time);
-  }
 
-  if (window_->IsKeyPressed(::graphics::Key::kS)) {
+  if (window_->IsKeyPressed(::graphics::Key::kS))
     camera_.Move(::graphics::CameraMovement::kBackward, delta_time);
-  }
 
-  if (window_->IsKeyPressed(::graphics::Key::kA)) {
+  if (window_->IsKeyPressed(::graphics::Key::kA))
     camera_.Move(::graphics::CameraMovement::kLeft, delta_time);
-  }
 
-  if (window_->IsKeyPressed(::graphics::Key::kD)) {
+  if (window_->IsKeyPressed(::graphics::Key::kD))
     camera_.Move(::graphics::CameraMovement::kRight, delta_time);
-  }
 }
 
 int Application::Run() {

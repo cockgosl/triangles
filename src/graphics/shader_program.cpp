@@ -7,8 +7,7 @@
 #include <string_view>
 #include <utility>
 
-namespace graphics {
-// next block is not a part of the API, so it's hidden in the empty namespace
+namespace graphics { // next block is not a part of the API, so it's hidden in the empty namespace
 namespace {
 
 class ShaderHandle {
@@ -267,7 +266,7 @@ void ShaderProgram::SetFloat(const char *name, float value) const noexcept {
 }
 
 void ShaderProgram::SetVec3(const char *name,
-                            const glm::vec3 &value) const noexcept {
+                            const glm::vec3 &vec) const noexcept {
     if (name == nullptr) {
         return;
     }
@@ -278,7 +277,7 @@ void ShaderProgram::SetVec3(const char *name,
         return;
     }
 
-    glUniform3fv(location, 1, glm::value_ptr(value));
+    glUniform3fv(location, 1, glm::value_ptr(vec));
 }
 
 void ShaderProgram::SetMatrix4(const char *name,
