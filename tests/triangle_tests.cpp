@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "triangle.hpp"
+#include "geometry/triangle.hpp"
 
 using triangles::Triangle3;
 using triangles::Vector3;

@@ -1,4 +1,4 @@
-#include "triangle.hpp"
+#include "geometry/triangle.hpp"
 
 #include <limits>
 #include <cmath>

@@ -3,8 +3,8 @@
 #include <cmath>
 #include <limits>
 
-#include "line3.hpp"
-#include "plane3.hpp"
+#include "geometry/line3.hpp"
+#include "geometry/plane3.hpp"
 
 using triangles::Line3;
 using triangles::Plane3;

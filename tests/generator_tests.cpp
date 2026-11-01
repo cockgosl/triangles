@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "generator.hpp"
+#include "geometry/generator.hpp"
 
 #include <cmath>
 #include <limits>

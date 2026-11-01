@@ -4,7 +4,7 @@
 #include <cmath>
 #include <limits>
 
-#include "intersection.hpp"
+#include "geometry/intersection.hpp"
 
 using triangles::Triangle3;
 using triangles::Vector3;

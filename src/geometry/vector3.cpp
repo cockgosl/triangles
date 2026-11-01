@@ -1,4 +1,4 @@
-#include "vector3.hpp"
+#include "geometry/vector3.hpp"
 
 #include <limits>
 #include <algorithm>

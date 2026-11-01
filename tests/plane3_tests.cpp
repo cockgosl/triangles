@@ -3,7 +3,7 @@
 #include <array>
 #include <limits>
 
-#include "plane3.hpp"
+#include "geometry/plane3.hpp"
 
 using triangles::Plane3;
 using triangles::Triangle3;
