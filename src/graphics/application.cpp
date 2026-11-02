@@ -3,18 +3,17 @@
 #include "geometry/generator.hpp"
 #include "geometry/intersection.hpp"
 #include "geometry/octotree.hpp"
+#include "geometry/scene_config.hpp"
 #include "geometry/triangle.hpp"
 #include "geometry/vector3.hpp"
 
 #include <glad/gl.h>
 
-#include <algorithm>
 #include <array>
 #include <chrono>
-#include <cmath>
 #include <iostream>
 #include <optional>
-#include <ranges>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -25,10 +24,13 @@ constexpr double kMaxCoordinateMagnitude = 0.9;
 
 std::optional<std::vector<bool>> FindIntersectingTriangles(
     const std::vector<GeneratedTriangle> &generated_triangles,
-    const AABB &domain, const OctotreeConfig &config) {
-    auto tree = Octotree::Create(domain, config);
+    const AABB &domain, const SceneConfig &config) {
+    std::string error;
+    auto tree =
+        Octotree::Create(config.generator.domain, config.octotree, &error);
 
-    if (!tree.has_value()) {
+    if (!tree) {
+        std::cerr << "Octotree configuration error: " << error << '\n';
         return std::nullopt;
     }
 
@@ -144,17 +146,31 @@ bool Application::Initialize() {
         std::cerr << "Failed to create generation domain.\n";
         return false;
     }
-    const GeneratorConfig generator_config{.domain = *domain,
-                                           .target_max_edge_length = 120.0,
-                                           .relative_size_variation = 0.15,
-                                           .min_shape_quality = 0.1,
-                                           .seed = 42u,
-                                           .max_shape_attempts = 1000};
-    auto generator = Generator::Create(generator_config);
+
+    const SceneConfig config{
+        .generator =
+            {
+                .domain = *domain,
+                .target_max_edge_length = 100.0,
+                .relative_size_variation = 0.2,
+                .min_shape_quality = 0.15,
+                .seed = 5489u,
+                .max_shape_attempts = 1000,
+            },
+        .octotree =
+            {
+                .max_depth = 8,
+                .max_objects_per_node = 16,
+            },
+        .triangles_count = 4188,
+    };
+
+    std::string error;
+    auto generator = Generator::Create(config.generator, &error);
 
     if (!generator) {
-        std::cerr << "Failed to create generator.\n";
-        return false;
+        std::cerr << "Generator configuration error: " << error << '\n';
+        return 1;
     }
 
     auto generated_triangles =
@@ -165,8 +181,7 @@ bool Application::Initialize() {
         return false;
     }
     auto intersection_results = triangles::FindIntersectingTriangles(
-        *generated_triangles, *domain,
-        triangles::OctotreeConfig{.max_depth = 8, .max_objects_per_node = 8});
+        *generated_triangles, config.generator.domain, config);
 
     if (!intersection_results.has_value()) {
         return false;

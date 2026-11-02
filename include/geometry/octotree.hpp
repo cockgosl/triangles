@@ -46,8 +46,7 @@ class Octotree {
 
     bool subdivide(Node &node);
 
-    std::optional<std::size_t> find_containing_child(const Node &node,
-                                                     const AABB &bounds) const;
+    Node *find_containing_child(Node &node, const AABB &bounds) const;
 
     void insert(Node &node, Entry entry, std::size_t depth);
 
@@ -56,7 +55,8 @@ class Octotree {
 
   public:
     static std::optional<Octotree> Create(const AABB &domain,
-                                          const OctotreeConfig &config = {});
+                                          const OctotreeConfig &config = {},
+                                          std::string *error = nullptr);
 
     Octotree(const Octotree &) = delete;
     Octotree &operator=(const Octotree &) = delete;

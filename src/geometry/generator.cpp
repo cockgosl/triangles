@@ -15,28 +15,41 @@ Generator::Generator(const GeneratorConfig &config, const AABB &centroid_domain,
       min_shape_quality_(config.min_shape_quality),
       max_shape_attempts_(config.max_shape_attempts), gen_(config.seed) {}
 
-std::optional<Generator> Generator::Create(const GeneratorConfig &config) {
-    constexpr double kMaxShapeQuality = 0.87; // approximately std::sqrt(3)/2
+std::optional<Generator> Generator::Create(const GeneratorConfig &config,
+                                           std::string *error) {
+    if (error) {
+        error->clear();
+    }
+
+    const auto fail = [error](const char *message) -> std::optional<Generator> {
+        if (error) {
+            *error = message;
+        }
+
+        return std::nullopt;
+    };
+
+    const double max_shape_quality = std::sqrt(3.0) / 2.0;
 
     const double target = config.target_max_edge_length;
     const double variation = config.relative_size_variation;
     const double quality = config.min_shape_quality;
 
     if (!std::isfinite(target) || target <= 0.0) {
-        return std::nullopt;
+        return fail("Target edge length must be finite and positive.");
     }
 
     if (!std::isfinite(variation) || variation < 0.0 || variation >= 1.0) {
-        return std::nullopt;
+        return fail("Relative size variation must be finite and in [0, 1).");
     }
 
     if (!std::isfinite(quality) || quality <= 0.0 ||
-        quality >= kMaxShapeQuality) {
-        return std::nullopt;
+        quality >= max_shape_quality) {
+        return fail("Shape quality must be finite and in (0, sqrt(3) / 2).");
     }
 
     if (config.max_shape_attempts == 0) {
-        return std::nullopt;
+        return fail("Maximum shape attempts must be positive.");
     }
 
     const double min_edge_length = target * (1.0 - variation);
@@ -44,14 +57,14 @@ std::optional<Generator> Generator::Create(const GeneratorConfig &config) {
 
     if (!std::isfinite(min_edge_length) || !std::isfinite(max_edge_length) ||
         min_edge_length <= 0.0) {
-        return std::nullopt;
+        return fail("Computed edge length range is invalid.");
     }
 
     const double min_area = quality * min_edge_length * min_edge_length / 2.0;
 
     if (!std::isfinite(min_area) ||
         min_area <= std::numeric_limits<double>::epsilon()) {
-        return std::nullopt;
+        return fail("Minimum triangle area is too small or non-finite.");
     }
 
     const Vector3 domain_min = config.domain.get_min();
@@ -62,7 +75,7 @@ std::optional<Generator> Generator::Create(const GeneratorConfig &config) {
 
     for (const double extent : extents) {
         if (!std::isfinite(extent) || extent <= 0.0) {
-            return std::nullopt;
+            return fail("Domain extents must be finite and positive.");
         }
     }
 
@@ -79,7 +92,7 @@ std::optional<Generator> Generator::Create(const GeneratorConfig &config) {
     const double margin = geometric_margin + safety_margin;
 
     if (!std::isfinite(margin)) {
-        return std::nullopt;
+        return fail("Computed domain margin is non-finite.");
     }
 
     const Vector3 centroid_min{domain_min.x + margin, domain_min.y + margin,
@@ -90,18 +103,18 @@ std::optional<Generator> Generator::Create(const GeneratorConfig &config) {
 
     if (!Vector3::isfinite_vec(centroid_min) ||
         !Vector3::isfinite_vec(centroid_max)) {
-        return std::nullopt;
+        return fail("Computed centroid bounds are non-finite.");
     }
 
     if (centroid_min.x >= centroid_max.x || centroid_min.y >= centroid_max.y ||
         centroid_min.z >= centroid_max.z) {
-        return std::nullopt;
+        return fail("Domain is too small for the requested triangle size.");
     }
 
     const auto centroid_domain = AABB::Create(centroid_min, centroid_max);
 
     if (!centroid_domain) {
-        return std::nullopt;
+        return fail("Failed to create the centroid domain.");
     }
 
     return Generator(config, *centroid_domain, min_edge_length,

@@ -51,7 +51,8 @@ class Generator {
     generate_random_orientation(const Triangle3 &triangle);
 
   public:
-    static std::optional<Generator> Create(const GeneratorConfig &config);
+    static std::optional<Generator> Create(const GeneratorConfig &config,
+                                           std::string *error = nullptr);
 
     std::optional<GeneratedTriangle> generate_triangle();
 

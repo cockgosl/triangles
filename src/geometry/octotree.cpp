@@ -1,7 +1,7 @@
 #include "geometry/octotree.hpp"
 
 #include <algorithm>
-#include <numeric>
+#include <string>
 #include <utility>
 
 namespace triangles {
@@ -17,16 +17,29 @@ Octotree::Octotree(const AABB &domain, const OctotreeConfig &config)
     : domain_(domain), config_(config), root_(std::make_unique<Node>(domain)) {}
 
 std::optional<Octotree> Octotree::Create(const AABB &domain,
-                                         const OctotreeConfig &config) {
-    if (config.max_objects_per_node == 0) {
-        return std::nullopt;
+                                         const OctotreeConfig &config,
+                                         std::string *error) {
+    if (error) {
+        error->clear();
     }
 
-    const Vector3 min = domain.get_min();
-    const Vector3 max = domain.get_max();
+    const auto fail = [error](const char *message) -> std::optional<Octotree> {
+        if (error) {
+            *error = message;
+        }
+
+        return std::nullopt;
+    };
+
+    if (config.max_objects_per_node == 0) {
+        return fail("Maximum objects per node must be positive.");
+    }
+
+    const Vector3 &min = domain.get_min();
+    const Vector3 &max = domain.get_max();
 
     if (min.x >= max.x || min.y >= max.y || min.z >= max.z) {
-        return std::nullopt;
+        return fail("Domain must have positive extent along every axis.");
     }
 
     return Octotree(domain, config);
@@ -40,9 +53,7 @@ bool Octotree::subdivide(Node &node) {
     const Vector3 min = node.bounds.get_min();
     const Vector3 max = node.bounds.get_max();
 
-    const Vector3 center{std::midpoint(min.x, max.x),
-                         std::midpoint(min.y, max.y),
-                         std::midpoint(min.z, max.z)};
+    const Vector3 center = node.bounds.center();
 
     if (center.x <= min.x || center.x >= max.x || center.y <= min.y ||
         center.y >= max.y || center.z <= min.z || center.z >= max.z) {
@@ -78,25 +89,21 @@ bool Octotree::subdivide(Node &node) {
     return true;
 }
 
-std::optional<std::size_t>
-Octotree::find_containing_child(const Node &node, const AABB &bounds) const {
-    for (std::size_t index = 0; index < node.children.size(); ++index) {
-        const auto &child = node.children[index];
-
+Octotree::Node *Octotree::find_containing_child(Node &node,
+                                                const AABB &bounds) const {
+    for (auto &child : node.children) {
         if (child && child->bounds.contains(bounds)) {
-            return index;
+            return child.get();
         }
     }
 
-    return std::nullopt;
+    return nullptr;
 }
 
 void Octotree::insert(Node &node, Entry entry, std::size_t depth) {
     if (!node.is_leaf()) {
-        const auto child_index = find_containing_child(node, entry.bounds);
-
-        if (child_index) {
-            insert(*node.children[*child_index], std::move(entry), depth + 1);
+        if (auto *child = find_containing_child(node, entry.bounds)) {
+            insert(*child, std::move(entry), depth + 1);
         } else {
             node.entries.push_back(std::move(entry));
         }
@@ -119,11 +126,8 @@ void Octotree::insert(Node &node, Entry entry, std::size_t depth) {
     remaining.reserve(node.entries.size());
 
     for (auto &existing : node.entries) {
-        const auto child_index = find_containing_child(node, existing.bounds);
-
-        if (child_index) {
-            insert(*node.children[*child_index], std::move(existing),
-                   depth + 1);
+        if (auto *child = find_containing_child(node, existing.bounds)) {
+            insert(*child, std::move(existing), depth + 1);
         } else {
             remaining.push_back(std::move(existing));
         }
@@ -159,7 +163,7 @@ void Octotree::query(const Node &node, const AABB &bounds,
     }
 
     for (const auto &child : node.children) {
-        if (child && child->bounds.intersects(bounds)) {
+        if (child) {
             query(*child, bounds, result);
         }
     }
@@ -167,11 +171,6 @@ void Octotree::query(const Node &node, const AABB &bounds,
 
 std::vector<std::size_t> Octotree::query(const AABB &bounds) const {
     std::vector<std::size_t> result;
-
-    if (!domain_.intersects(bounds)) {
-        return result;
-    }
-
     query(*root_, bounds, result);
 
     return result;
