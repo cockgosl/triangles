@@ -170,7 +170,7 @@ bool Application::Initialize() {
 
     if (!generator) {
         std::cerr << "Generator configuration error: " << error << '\n';
-        return 1;
+        return false;
     }
 
     auto generated_triangles =
