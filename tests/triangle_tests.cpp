@@ -52,3 +52,18 @@ TEST(Triangle3Test, Degenerate) {
 
     EXPECT_TRUE(triangle.is_degenerate());
 }
+
+TEST(Triangle3Test, CalculatesBounds) {
+    const Triangle3 triangle{
+        Vector3{1.0, 2.0, 0.0},
+        Vector3{4.0, 1.0, 3.0},
+        Vector3{2.0, 5.0, 1.0}
+    };
+
+    const auto bounds = triangle.bounds();
+
+    ASSERT_TRUE(bounds);
+
+    EXPECT_EQ(bounds->get_min(), Vector3(1.0, 1.0, 0.0));
+    EXPECT_EQ(bounds->get_max(), Vector3(4.0, 5.0, 3.0));
+}
