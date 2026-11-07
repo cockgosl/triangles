@@ -4,11 +4,24 @@
 #include <array>
 #include <cmath>
 #include <ranges>
+#include <stdexcept>
 #include <utility>
 
 namespace triangles {
 
 namespace {
+
+bool valid_triangle(const Triangle3 &triangle) {
+    try {
+        return !triangle.is_degenerate();
+    } catch (const std::invalid_argument &) {
+        return false;
+    } catch (const std::out_of_range &) {
+        return false;
+    } catch (const std::runtime_error &) {
+        return false;
+    }
+}
 
 std::optional<double> parallel_coefficient_ratio(const Plane3& plane1,
                                                 const Plane3& plane2) {
@@ -73,8 +86,7 @@ bool Plane3::is_coincide(const Plane3& plane1,
 
 
 std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
-    if(triangle.is_degenerate())
-        return std::nullopt;
+    if (!valid_triangle(triangle)) return std::nullopt;
 
     Vector3 edge3 = triangle.a;
     Vector3 edge2 = triangle.edge_AB();
@@ -87,6 +99,8 @@ std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
 std::optional<Plane3> Plane3::Create(const Vector3& point1,
                                      const Vector3& point2,
                                      const Vector3& point3) {
+    if (!valid_triangle(Triangle3(point1, point2, point3))) return std::nullopt;
+
     Vector3 edge_1 = point1 - point3;
     Vector3 edge_2 = point2 - point3;
     Vector3 normal = edge_1.cross(edge_2);

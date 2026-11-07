@@ -32,12 +32,17 @@ set(SRCS
     src/geometry/line3.cpp
     src/geometry/point2.cpp
     src/geometry/intersection.cpp
+    src/geometry/robust_predicates.cpp
     src/graphics/camera.cpp)
 
 add_library(glad STATIC third_party/glad/src/gl.c)
 add_library(triangles_lib STATIC ${SRCS})
 target_include_directories(triangles_lib PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(triangles_lib PUBLIC glm::glm)
+set_source_files_properties(
+    src/geometry/robust_predicates.cpp
+    PROPERTIES COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-fno-fast-math>"
+)
 target_include_directories(glad PUBLIC "${PROJECT_SOURCE_DIR}/third_party/glad/include")
 
 set(SHADER_DIR "${PROJECT_SOURCE_DIR}/shaders")

@@ -1,14 +1,11 @@
 #include "geometry/triangle.hpp"
+#include "geometry/robust_predicates.hpp"
 
-#include <limits>
 #include <algorithm>
 #include <array>
 #include <optional>
 
 namespace triangles {
-
-constexpr double EPSILON = std::numeric_limits<double>::epsilon();
-
 
 Triangle3::Triangle3(const Vector3& vector_1,
                      const Vector3& vector_2,
@@ -22,7 +19,13 @@ double Triangle3::area() const {
 }
 
 bool Triangle3::is_degenerate() const {
-    return area() < EPSILON;
+    const std::array signs{
+        robust::orient2d({a.x, a.y}, {b.x, b.y}, {c.x, c.y}),
+        robust::orient2d({a.y, a.z}, {b.y, b.z}, {c.y, c.z}),
+        robust::orient2d({a.z, a.x}, {b.z, b.x}, {c.z, c.x})};
+    return std::all_of(signs.begin(), signs.end(), [](robust::Sign sign) {
+        return sign == robust::Sign::zero;
+    });
 }
 
 Vector3 Triangle3::edge_AB() const {

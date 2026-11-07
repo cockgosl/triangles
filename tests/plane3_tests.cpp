@@ -51,6 +51,9 @@ TEST(Plane3Test, RejectsDegenerateAndNonFiniteInputs) {
 
     for (const double invalid : {std::numeric_limits<double>::quiet_NaN(),
                                   std::numeric_limits<double>::infinity()}) {
+        EXPECT_FALSE(
+            Plane3::Create(Triangle3(Vector3(0, 0, invalid), second, third))
+                .has_value());
         EXPECT_FALSE(Plane3::Create(Vector3(invalid, 0.0, 0.0),
                                    Vector3(0.0, 0.0, 1.0)).has_value());
         EXPECT_FALSE(Plane3::Create(first, Vector3(0.0, invalid, 1.0)).has_value());

@@ -1,375 +1,203 @@
 #include "geometry/intersection.hpp"
-#include "geometry/plane3.hpp"
+#include "geometry/robust_predicates.hpp"
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <optional>
 #include <ranges>
-#include <tuple>
-#include <utility>
-#include <vector>
+#include <stdexcept>
 
 namespace triangles {
 
 namespace {
 
-double plane_value(const Plane3& plane, const Vector3& point) {
-    return plane.get_a() * point.x +
-           plane.get_b() * point.y +
-           plane.get_c() * point.z +
-           plane.get_d();
+using robust::Coordinates2;
+using robust::Coordinates3;
+using robust::Sign;
+using TriangleCoordinates = std::array<Coordinates3, 3>;
+using ProjectedTriangle = std::array<Coordinates2, 3>;
+using Projection = std::array<std::size_t, 2>;
+using PlaneSides = std::array<Sign, 3>;
+
+TriangleCoordinates coordinates(const Triangle3 &triangle) {
+    const auto point = [](const Vector3 &vertex) -> Coordinates3 {
+        return {vertex.x, vertex.y, vertex.z};
+    };
+    return {point(triangle.a), point(triangle.b), point(triangle.c)};
 }
 
-std::optional<std::pair<Vector3, Vector3>> make_box(const Vector3& edge,
-                                                    const Vector3& point) {
-    const Vector3 endpoint = point + edge;
-    const std::array values{point.x, endpoint.x, point.y, endpoint.y, point.z, endpoint.z};
-    bool is_valid = std::ranges::all_of(values, [](double elem) { return std::isfinite(elem); });
-    if (!is_valid)
-        return std::nullopt;
-
-    double x_1, x_2, y_1, y_2, z_1, z_2;
-    std::tie(x_1, x_2) = std::minmax(point.x, endpoint.x);
-    std::tie(y_1, y_2) = std::minmax(point.y, endpoint.y);
-    std::tie(z_1, z_2) = std::minmax(point.z, endpoint.z);
-
-    Vector3 left_bottom{x_1, y_1, z_1};
-    Vector3 right_top{x_2, y_2, z_2};
-
-    return std::pair{left_bottom, right_top};
-
+Coordinates2 project(const Coordinates3 &point, const Projection &axes) {
+    return {point[axes[0]], point[axes[1]]};
 }
 
-bool quick_rejection(const Vector3& edge_1,
-                     const Vector3& point_1,
-                     const Vector3& edge_2,
-                     const Vector3& point_2) {
-    auto bound_box_1 = make_box(edge_1, point_1);
-    auto bound_box_2 = make_box(edge_2, point_2);
-    if (!bound_box_1 || !bound_box_2)
-        return false;
-
-    const auto& [min1, max1] = *bound_box_1;
-    const auto& [min2, max2] = *bound_box_2;
-
-    return (max2.x < min1.x || max1.x < min2.x) ||
-           (max2.y < min1.y || max1.y < min2.y) ||
-           (max2.z < min1.z || max1.z < min2.z);
+ProjectedTriangle project(const TriangleCoordinates &triangle,
+                          const Projection &axes) {
+    return {project(triangle[0], axes), project(triangle[1], axes),
+            project(triangle[2], axes)};
 }
 
-bool check_dot_sign(const Vector3& edge_1,
-                    const Vector3& point_1,
-                    const Vector3& edge_2,
-                    const Vector3& point_2) {
-    const Vector3 cross_prod_1 = (point_2 - point_1).cross(edge_1);
-    const Vector3 cross_prod_2 = (point_2 + edge_2 - point_1).cross(edge_1);
-    const double dot_prod = cross_prod_1.dot(cross_prod_2);
-
-    return (dot_prod <= 0);
+ProjectedTriangle project_nondegenerate(const TriangleCoordinates &triangle,
+                                        Projection &axes) {
+    constexpr std::array<Projection, 3> projections{{{0, 1}, {1, 2}, {2, 0}}};
+    for (const auto &candidate : projections) {
+        const auto projected = project(triangle, candidate);
+        if (robust::orient2d(projected[0], projected[1], projected[2]) !=
+            Sign::zero) {
+            axes = candidate;
+            return projected;
+        }
+    }
+    throw std::logic_error("Expected a nondegenerate triangle.");
 }
 
-// we need guarantee, that segments lie in a same plane
-bool is_segments_intersec(const Vector3& edge_1,
-                          const Vector3& point_1,
-                          const Vector3& edge_2,
-                          const Vector3& point_2) {
-    if (quick_rejection(edge_1, point_1, edge_2, point_2)) return false;
-
-    bool sign_1 = check_dot_sign(edge_1, point_1, edge_2, point_2);
-    bool sign_2 = check_dot_sign(edge_2, point_2, edge_1, point_1);
-
-    return (sign_1 && sign_2);
+bool same_nonzero(Sign first, Sign second) {
+    return first != Sign::zero && first == second;
 }
 
+bool opposite(Sign first, Sign second) {
+    return first != Sign::zero && second != Sign::zero && first != second;
+}
 
+bool consistent_sides(const PlaneSides &sides) {
+    return std::ranges::all_of(
+               sides, [](Sign side) { return side != Sign::negative; }) ||
+           std::ranges::all_of(
+               sides, [](Sign side) { return side != Sign::positive; });
+}
 
-bool is_edges_intersec(const Triangle3& triangle_1,
-                       const Triangle3& triangle_2) {
-    Vector3 AB_1 = triangle_1.edge_AB();
-    Vector3 AC_1 = triangle_1.edge_AC();
-    Vector3 BC_1 = triangle_1.edge_BC();
+bool point_inside(const Coordinates2 &point,
+                  const ProjectedTriangle &triangle) {
+    return consistent_sides(
+        {robust::orient2d(triangle[0], triangle[1], point),
+         robust::orient2d(triangle[1], triangle[2], point),
+         robust::orient2d(triangle[2], triangle[0], point)});
+}
 
-    Vector3 AB_2 = triangle_2.edge_AB();
-    Vector3 AC_2 = triangle_2.edge_AC();
-    Vector3 BC_2 = triangle_2.edge_BC();
+bool in_segment_bounds(const Coordinates2 &point, const Coordinates2 &first,
+                       const Coordinates2 &second) {
+    return point[0] >= std::min(first[0], second[0]) &&
+           point[0] <= std::max(first[0], second[0]) &&
+           point[1] >= std::min(first[1], second[1]) &&
+           point[1] <= std::max(first[1], second[1]);
+}
 
-    std::array<std::pair<Vector3, Vector3>, 3> edges_1 = {{{AB_1, triangle_1.a},
-                                                           {AC_1, triangle_1.a},
-                                                           {BC_1, triangle_1.b}}};
+bool segments_intersect(const Coordinates2 &a, const Coordinates2 &b,
+                        const Coordinates2 &c, const Coordinates2 &d) {
+    const auto ab_c = robust::orient2d(a, b, c);
+    const auto ab_d = robust::orient2d(a, b, d);
+    const auto cd_a = robust::orient2d(c, d, a);
+    const auto cd_b = robust::orient2d(c, d, b);
 
-    std::array<std::pair<Vector3, Vector3>, 3> edges_2 = {{{AB_2, triangle_2.a},
-                                                           {AC_2, triangle_2.a},
-                                                           {BC_2, triangle_2.b}}};
+    if (ab_c == Sign::zero && in_segment_bounds(c, a, b)) return true;
+    if (ab_d == Sign::zero && in_segment_bounds(d, a, b)) return true;
+    if (cd_a == Sign::zero && in_segment_bounds(a, c, d)) return true;
+    if (cd_b == Sign::zero && in_segment_bounds(b, c, d)) return true;
+    return opposite(ab_c, ab_d) && opposite(cd_a, cd_b);
+}
 
-    for (const auto& [edge_1, point_1] : edges_1)
-        for (const auto& [edge_2, point_2] : edges_2)
-            if(is_segments_intersec(edge_1, point_1, edge_2, point_2))
-                return true;
-
+bool coplanar_segment_intersects(const Coordinates3 &first,
+                                 const Coordinates3 &second,
+                                 const TriangleCoordinates &triangle) {
+    Projection axes{};
+    const auto projected_triangle = project_nondegenerate(triangle, axes);
+    const auto a = project(first, axes);
+    const auto b = project(second, axes);
+    if (point_inside(a, projected_triangle) ||
+        point_inside(b, projected_triangle)) {
+        return true;
+    }
+    for (std::size_t edge = 0; edge < 3; ++edge) {
+        if (segments_intersect(a, b, projected_triangle[edge],
+                               projected_triangle[(edge + 1) % 3])) {
+            return true;
+        }
+    }
     return false;
 }
 
-
-
-bool is_point_inside(const Vector3& point,
-                     const Triangle3& triangle) {
-    const Vector3 edge_AC = triangle.edge_AC();
-    const Vector3 edge_AB = triangle.edge_AB();
-    Vector3 normal = edge_AB.cross(edge_AC);
-
-    const std::array sides {
-        normal.dot(edge_AB.cross(point - triangle.a)),
-        normal.dot((triangle.c - triangle.b).cross(point - triangle.b)),
-        normal.dot((-edge_AC).cross(point - triangle.c)),
-    };
-
-    return std::ranges::all_of(sides, [](double sign) { return sign >= 0; });
-}
-
-bool is_triangle_inside(const Triangle3& triangle_in,
-                        const Triangle3& triangle_out) {
-    bool is_point_a_in = is_point_inside(triangle_in.a, triangle_out);
-    bool is_point_b_in = is_point_inside(triangle_in.b, triangle_out);
-    bool is_point_c_in = is_point_inside(triangle_in.c, triangle_out);
-
-    return (is_point_a_in &&
-            is_point_b_in &&
-            is_point_c_in);
-}
-
-bool is_triangle_inclusion(const Triangle3& triangle_1,
-                           const Triangle3& triangle_2) {
-    bool is_first_in_second = is_triangle_inside(triangle_1, triangle_2);
-    bool is_second_in_first = is_triangle_inside(triangle_2, triangle_1);
-
-    return (is_first_in_second ||
-            is_second_in_first);
-}
-
-// Noncoplanar triangles: cut the edges, find line parameters, compare intervals.
-using LineInterval = std::pair<double, double>;
-
-bool is_valid_triangle(const Triangle3& triangle) {
-    const std::array vertices{triangle.a, triangle.b, triangle.c};
-    if (!std::ranges::all_of(vertices, Vector3::isfinite_vec))
-        return false;
-
-    const Vector3 normal = triangle.edge_AB().cross(triangle.edge_AC());
-    return Vector3::valid_vec(normal) && !triangle.is_degenerate();
-}
-
-bool is_valid_plane(const Plane3& plane) {
-    const std::array coefficients{plane.get_a(), plane.get_b(), plane.get_c(), plane.get_d()};
-    return std::ranges::all_of(coefficients, [](double value) { return std::isfinite(value); }) &&
-           Vector3::valid_vec(plane.get_normal());
-}
-
-bool is_valid_line(const Line3& line) {
-    return Vector3::isfinite_vec(line.get_point()) &&
-           Vector3::valid_vec(line.get_direction());
-}
-
-std::optional<bool> same_side(const Plane3& plane, const Triangle3& triangle) {
-    if (!is_valid_plane(plane) || !is_valid_triangle(triangle))
-        return std::nullopt;
-
-    const std::array values{plane_value(plane, triangle.a),
-                            plane_value(plane, triangle.b),
-                            plane_value(plane, triangle.c)};
-    if (!std::ranges::all_of(values, [](double value) { return std::isfinite(value); }))
-        return std::nullopt;
-
-    return std::ranges::all_of(values, [](double value) { return value > 0.0; }) ||
-           std::ranges::all_of(values, [](double value) { return value < 0.0; });
-}
-
-// An empty vector means no intersection; nullopt means invalid data or arithmetic.
-std::optional<std::vector<Vector3>> edge_plane_intersections(const Vector3& point_1,
-                                                             const Vector3& point_2,
-                                                             const Plane3& plane) {
-    if (!Vector3::isfinite_vec(point_1) || !Vector3::isfinite_vec(point_2) ||
-        !is_valid_plane(plane))
-        return std::nullopt;
-
-    const double value_1 = plane_value(plane, point_1);
-    const double value_2 = plane_value(plane, point_2);
-    if (!std::isfinite(value_1) || !std::isfinite(value_2))
-        return std::nullopt;
-
-    std::vector<Vector3> points;
-    if (value_1 == 0.0)
-        points.push_back(point_1);
-    if (value_2 == 0.0)
-        points.push_back(point_2);
-    if (!points.empty())
-        return points;
-
-    if ((value_1 < 0.0) == (value_2 < 0.0))
-        return points;
-
-    // Scale the distances instead of forming value_1 - value_2, which can overflow.
-    const double distance_1 = std::fabs(value_1);
-    const double distance_2 = std::fabs(value_2);
-    const double ratio = std::min(distance_1, distance_2) / std::max(distance_1, distance_2);
-    const double parameter = distance_1 >= distance_2 ? 1.0 / (1.0 + ratio)
-                                                      : ratio / (1.0 + ratio);
-    if (!std::isfinite(parameter) || parameter < 0.0 || parameter > 1.0)
-        return std::nullopt;
-
-    const Vector3 point{std::lerp(point_1.x, point_2.x, parameter),
-                        std::lerp(point_1.y, point_2.y, parameter),
-                        std::lerp(point_1.z, point_2.z, parameter)};
-    if (!Vector3::isfinite_vec(point))
-        return std::nullopt;
-
-    points.push_back(point);
-    return points;
-}
-
-// Parameter of the point's projection onto the line; the direction need not be unit.
-std::optional<double> line_parameter(const Vector3& point, const Line3& line) {
-    if (!Vector3::isfinite_vec(point) || !is_valid_line(line))
-        return std::nullopt;
-
-    const Vector3 offset = point - line.get_point();
-    const double direction_squared = line.get_direction().dot(line.get_direction());
-    if (!Vector3::isfinite_vec(offset) || !std::isfinite(direction_squared) ||
-        direction_squared <= 0.0)
-        return std::nullopt;
-
-    const double parameter = offset.dot(line.get_direction()) / direction_squared;
-    if (!std::isfinite(parameter))
-        return std::nullopt;
-
-    return parameter;
-}
-
-// Collect parameters of the triangle's cut by the other triangle's plane.
-std::optional<std::vector<double>> triangle_line_parameters(const Triangle3& triangle,
-                                                            const Plane3& other_plane,
-                                                            const Line3& line) {
-    if (!is_valid_triangle(triangle) || !is_valid_plane(other_plane) || !is_valid_line(line))
-        return std::nullopt;
-
-    const std::array edges{std::pair{triangle.a, triangle.b},
-                           std::pair{triangle.b, triangle.c},
-                           std::pair{triangle.c, triangle.a}};
-    std::vector<double> parameters;
-    parameters.reserve(6);
-
-    for (const auto& [point_1, point_2] : edges) {
-        const auto points = edge_plane_intersections(point_1, point_2, other_plane);
-        if (!points)
-            return std::nullopt;
-
-        for (const auto& point : *points) {
-            const auto parameter = line_parameter(point, line);
-            if (!parameter)
-                return std::nullopt;
-
-            parameters.push_back(*parameter);
-        }
+bool segment_intersects(const Coordinates3 &first, const Coordinates3 &second,
+                        Sign first_side, Sign second_side,
+                        const TriangleCoordinates &triangle) {
+    if (same_nonzero(first_side, second_side)) return false;
+    if (first_side == Sign::zero && second_side == Sign::zero) {
+        return coplanar_segment_intersects(first, second, triangle);
     }
 
-    return parameters;
+    // The plane-side test places the line's hit within the closed segment.
+    return consistent_sides(
+        {robust::orient3d(first, second, triangle[0], triangle[1]),
+         robust::orient3d(first, second, triangle[1], triangle[2]),
+         robust::orient3d(first, second, triangle[2], triangle[0])});
 }
 
-// A point cut produces [t, t]; repeated parameters do not affect the bounds.
-std::optional<LineInterval> make_line_interval(const std::vector<double>& parameters) {
-    if (parameters.empty() ||
-        !std::ranges::all_of(parameters, [](double value) { return std::isfinite(value); }))
-        return std::nullopt;
-
-    const auto [minimum, maximum] = std::ranges::minmax_element(parameters);
-    return LineInterval{*minimum, *maximum};
+PlaneSides plane_sides(const TriangleCoordinates &plane,
+                       const TriangleCoordinates &triangle) {
+    return {robust::orient3d(plane[0], plane[1], plane[2], triangle[0]),
+            robust::orient3d(plane[0], plane[1], plane[2], triangle[1]),
+            robust::orient3d(plane[0], plane[1], plane[2], triangle[2])};
 }
 
-std::optional<bool> intervals_overlap(const LineInterval& interval_1,
-                                      const LineInterval& interval_2) {
-    const std::array bounds{interval_1.first, interval_1.second,
-                            interval_2.first, interval_2.second};
-    if (!std::ranges::all_of(bounds, [](double value) { return std::isfinite(value); }) ||
-        interval_1.first > interval_1.second || interval_2.first > interval_2.second)
-        return std::nullopt;
-
-    return std::max(interval_1.first, interval_2.first) <=
-           std::min(interval_1.second, interval_2.second);
+bool strictly_one_side(const PlaneSides &sides) {
+    return same_nonzero(sides[0], sides[1]) && same_nonzero(sides[0], sides[2]);
 }
 
-// Compare both triangle sections on the already computed common line.
-std::optional<bool> is_line_intersec(const Triangle3& triangle_1,
-                                     const Triangle3& triangle_2,
-                                     const Plane3& plane_1,
-                                     const Plane3& plane_2,
-                                     const Line3& line) {
-    const auto parameters_1 = triangle_line_parameters(triangle_1, plane_2, line);
-    const auto parameters_2 = triangle_line_parameters(triangle_2, plane_1, line);
-    if (!parameters_1 || !parameters_2)
-        return std::nullopt;
-    if (parameters_1->empty() || parameters_2->empty())
+bool triangles_intersect(const TriangleCoordinates &first,
+                         const TriangleCoordinates &second) {
+    const auto first_sides = plane_sides(second, first);
+    const auto second_sides = plane_sides(first, second);
+    if (strictly_one_side(first_sides) || strictly_one_side(second_sides)) {
         return false;
+    }
 
-    const auto interval_1 = make_line_interval(*parameters_1);
-    const auto interval_2 = make_line_interval(*parameters_2);
-    if (!interval_1 || !interval_2)
-        return std::nullopt;
-
-    return intervals_overlap(*interval_1, *interval_2);
+    for (std::size_t edge = 0; edge < 3; ++edge) {
+        const auto next = (edge + 1) % 3;
+        if (segment_intersects(first[edge], first[next], first_sides[edge],
+                               first_sides[next], second) ||
+            segment_intersects(second[edge], second[next], second_sides[edge],
+                               second_sides[next], first)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
 
-std::optional<Line3> intersection(const Plane3& plane1,
-                                  const Plane3& plane2) {
+std::optional<Line3> intersection(const Plane3 &plane1, const Plane3 &plane2) {
     const Vector3 normal_1 = plane1.get_normal().normalized();
     const Vector3 normal_2 = plane2.get_normal().normalized();
     const Vector3 direction = normal_1.cross(normal_2);
 
-    if (!Vector3::valid_vec(direction))
-        return std::nullopt;
+    if (!Vector3::valid_vec(direction)) return std::nullopt;
 
-    const Vector3 op_vector = normal_1 * plane2.get_d() - normal_2 * plane1.get_d();
+    const Vector3 op_vector =
+        normal_1 * plane2.get_d() - normal_2 * plane1.get_d();
     const Vector3 numerator = op_vector.cross(direction);
     const double denominator = 1.0 / direction.dot(direction);
-
-    const Vector3 supp_point = numerator * denominator; // "supp" - abbreviation from supportive
+    const Vector3 supp_point = numerator * denominator;
 
     return Line3::Create(direction.normalized(), supp_point);
 }
 
-std::optional<bool> intersection(const Triangle3& triangle_1,
-                                 const Triangle3& triangle_2) {
-    if (!is_valid_triangle(triangle_1) || !is_valid_triangle(triangle_2))
-        return std::nullopt;
-
-    const auto plane_1 = Plane3::Create(triangle_1);
-    const auto plane_2 = Plane3::Create(triangle_2);
-    if (!plane_1 || !plane_2 || !is_valid_plane(*plane_1) || !is_valid_plane(*plane_2))
-        return std::nullopt;
-
-    const auto intersec_line = intersection(*plane_1, *plane_2);
-    if (!intersec_line) {
-        if (Plane3::is_coincide(*plane_1, *plane_2)) {
-            if (is_triangle_inclusion(triangle_1, triangle_2))
-                return true;
-            else if (is_edges_intersec(triangle_1, triangle_2))
-                return true;
-            return false;
-        } else if (Plane3::is_parallel(*plane_1, *plane_2))
-            return false;
-        else
+std::optional<bool> intersection(const Triangle3 &triangle_1,
+                                 const Triangle3 &triangle_2) {
+    try {
+        if (triangle_1.is_degenerate() || triangle_2.is_degenerate()) {
             return std::nullopt;
-    }
-
-    const auto side_1 = same_side(*plane_1, triangle_2);
-    const auto side_2 = same_side(*plane_2, triangle_1);
-    if (!side_1 || !side_2)
+        }
+        const auto first_bounds = triangle_1.bounds();
+        const auto second_bounds = triangle_2.bounds();
+        if (!first_bounds || !second_bounds) return std::nullopt;
+        if (!first_bounds->intersects(*second_bounds)) return false;
+        return triangles_intersect(coordinates(triangle_1),
+                                   coordinates(triangle_2));
+    } catch (const std::invalid_argument &) {
         return std::nullopt;
-    if (*side_1 || *side_2)
-        return false;
-
-    return is_line_intersec(triangle_1, triangle_2, *plane_1, *plane_2, *intersec_line);
+    } catch (const std::out_of_range &) {
+        return std::nullopt;
+    } catch (const std::runtime_error &) {
+        return std::nullopt;
+    }
 }
 
 } // namespace triangles

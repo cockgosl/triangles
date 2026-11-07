@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <numbers>
+#include <stdexcept>
 
 namespace triangles {
 
@@ -238,48 +239,58 @@ Generator::generate_random_orientation(const Triangle3 &triangle) {
 }
 
 std::optional<GeneratedTriangle> Generator::generate_triangle() {
-    auto local_triangle = generate_local_triangle();
+    try {
+        auto local_triangle = generate_local_triangle();
 
-    if (!local_triangle) {
+        if (!local_triangle) {
+            return std::nullopt;
+        }
+
+        auto rotated_triangle = generate_random_orientation(*local_triangle);
+
+        if (!rotated_triangle) {
+            return std::nullopt;
+        }
+
+        const Vector3 domain_min = centroid_domain_.get_min();
+        const Vector3 domain_max = centroid_domain_.get_max();
+
+        std::uniform_real_distribution<double> x_distribution(domain_min.x,
+                                                              domain_max.x);
+
+        std::uniform_real_distribution<double> y_distribution(domain_min.y,
+                                                              domain_max.y);
+
+        std::uniform_real_distribution<double> z_distribution(domain_min.z,
+                                                              domain_max.z);
+
+        const Vector3 centroid{x_distribution(gen_), y_distribution(gen_),
+                               z_distribution(gen_)};
+
+        const Triangle3 triangle{rotated_triangle->a + centroid,
+                                 rotated_triangle->b + centroid,
+                                 rotated_triangle->c + centroid};
+
+        if (triangle.is_degenerate()) return std::nullopt;
+
+        const auto bounds = triangle.bounds();
+
+        if (!bounds) {
+            return std::nullopt;
+        }
+
+        if (!domain_.contains(*bounds)) {
+            return std::nullopt;
+        }
+
+        return GeneratedTriangle{triangle, *bounds};
+    } catch (const std::invalid_argument &) {
+        return std::nullopt;
+    } catch (const std::out_of_range &) {
+        return std::nullopt;
+    } catch (const std::runtime_error &) {
         return std::nullopt;
     }
-
-    auto rotated_triangle = generate_random_orientation(*local_triangle);
-
-    if (!rotated_triangle) {
-        return std::nullopt;
-    }
-
-    const Vector3 domain_min = centroid_domain_.get_min();
-    const Vector3 domain_max = centroid_domain_.get_max();
-
-    std::uniform_real_distribution<double> x_distribution(domain_min.x,
-                                                          domain_max.x);
-
-    std::uniform_real_distribution<double> y_distribution(domain_min.y,
-                                                          domain_max.y);
-
-    std::uniform_real_distribution<double> z_distribution(domain_min.z,
-                                                          domain_max.z);
-
-    const Vector3 centroid{x_distribution(gen_), y_distribution(gen_),
-                           z_distribution(gen_)};
-
-    const Triangle3 triangle{rotated_triangle->a + centroid,
-                             rotated_triangle->b + centroid,
-                             rotated_triangle->c + centroid};
-
-    const auto bounds = triangle.bounds();
-
-    if (!bounds) {
-        return std::nullopt;
-    }
-
-    if (!domain_.contains(*bounds)) {
-        return std::nullopt;
-    }
-
-    return GeneratedTriangle{triangle, *bounds};
 }
 
 std::optional<std::vector<GeneratedTriangle>>
