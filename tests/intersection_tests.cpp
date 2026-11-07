@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <array>
-#include <cmath>
 #include <limits>
 
 #include "geometry/intersection.hpp"
@@ -161,11 +160,13 @@ TEST(TriangleIntersectionTest, CoplanarEdgesCrossWithoutContainedVertices) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, VerticalCoplanarTrianglesSeparatedAlongZ) {
+TEST(TriangleIntersectionTest, VerticalCoplanarTrianglesNeedYZProjection) {
     const Triangle3 first(Vector3(0, 0, 0), Vector3(0, 2, 0), Vector3(0, 0, 2));
-    const Triangle3 second(Vector3(0, 0, 3), Vector3(0, 2, 3), Vector3(0, 0, 5));
+    const Triangle3 second(Vector3(0, 1.5, 1.5), Vector3(0, 3.5, 1.5),
+                           Vector3(0, 1.5, 3.5));
 
-    // Identical x/y bounds must not hide the disjoint z ranges [0, 2] and [3, 5].
+    // The y/z bounds overlap, but the triangles lie on opposite sides of
+    // y+z=2.5.
     const auto result = triangles::intersection(first, second);
     ASSERT_TRUE(result.has_value());
     EXPECT_FALSE(result.value());
@@ -197,15 +198,36 @@ TEST(TriangleIntersectionTest, RejectsDegenerateTriangleInEitherArgument) {
     EXPECT_FALSE(triangles::intersection(valid, invalid).has_value());
 }
 
-TEST(TriangleIntersectionTest, ReportsOverflowOfPlaneValue) {
-    const double large = 1.4e308;
-    const double next = std::nextafter(large, std::numeric_limits<double>::infinity());
-    const Triangle3 first(Vector3(0, 0, 0), Vector3(1, -1, 0), Vector3(0, 0, 1));
-    const Triangle3 second(Vector3(large, large, 0), Vector3(next, next, 0),
-                           Vector3(large, large, 1e-292));
+TEST(TriangleIntersectionTest, RejectsCoordinatesOutsidePredicateRange) {
+    const double large = 0x1p251;
+    const Triangle3 first(Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0));
+    const Triangle3 second(Vector3(large, 0, 0), Vector3(large, 1, 0),
+                           Vector3(large, 0, 1));
 
-    ASSERT_TRUE(std::isfinite(first.area()));
-    ASSERT_TRUE(std::isfinite(second.area()));
     EXPECT_FALSE(triangles::intersection(first, second).has_value());
     EXPECT_FALSE(triangles::intersection(second, first).has_value());
+}
+
+TEST(TriangleIntersectionTest, CoplanarGapSurvivesProductCancellation) {
+    const double tail = 0x1p-27;
+    const Triangle3 first(Vector3(0, 0, 0), Vector3(1 + tail, 1, 0),
+                          Vector3(0, 2, 0));
+    const Triangle3 second(Vector3(1, 1 - tail, 0), Vector3(1, 0, 0),
+                           Vector3(0.5, 0, 0));
+
+    const auto result = triangles::intersection(first, second);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(*result);
+}
+
+TEST(TriangleIntersectionTest,
+     NearlyParallelPlanesDoNotCreateFalseIntersection) {
+    const double height = 0x1p-60;
+    const Triangle3 first(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
+    const Triangle3 second(Vector3(1, 0.25, height), Vector3(1, 1.25, height),
+                           Vector3(4, 0.25, -height));
+
+    const auto result = triangles::intersection(first, second);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(*result);
 }

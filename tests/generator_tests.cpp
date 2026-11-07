@@ -127,3 +127,14 @@ TEST(GeneratorTests, GeneratesTrianglesInsideDomain) {
         EXPECT_GE(quality, config.min_shape_quality);
     }
 }
+
+TEST(GeneratorTests, UnsupportedPredicateRangeReturnsGenerationFailure) {
+    auto config = MakeConfig();
+    config.domain = *AABB::Create(Vector3{-0x1p264, -0x1p264, -0x1p264},
+                                  Vector3{0x1p264, 0x1p264, 0x1p264});
+    config.target_max_edge_length = 0x1p260;
+    auto generator = Generator::Create(config);
+
+    ASSERT_TRUE(generator.has_value());
+    EXPECT_FALSE(generator->generate_triangle().has_value());
+}

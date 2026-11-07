@@ -20,6 +20,7 @@ public:
     ~Triangle3();
 
     double area() const;
+    // Exact collinearity; invalid coordinates or arithmetic modes throw.
     bool   is_degenerate() const;
 
     Vector3 edge_AB() const;

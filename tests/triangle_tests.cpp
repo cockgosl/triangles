@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <stdexcept>
 
 #include "geometry/triangle.hpp"
 
@@ -41,8 +42,9 @@ TEST(Triangle3Test, Normal) {
     EXPECT_NEAR(normal.z, 1.0, EPSILON);
 }
 
-TEST(Triangle3Test, NonDegenerate) {
-    Triangle3 triangle(Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0));
+TEST(Triangle3Test, SmallTriangleIsNotDegenerate) {
+    Triangle3 triangle(Vector3(0, 0, 0), Vector3(0x1p-100, 0, 0),
+                       Vector3(0, 0x1p-100, 0));
 
     EXPECT_FALSE(triangle.is_degenerate());
 }
@@ -66,4 +68,12 @@ TEST(Triangle3Test, CalculatesBounds) {
 
     EXPECT_EQ(bounds->get_min(), Vector3(1.0, 1.0, 0.0));
     EXPECT_EQ(bounds->get_max(), Vector3(4.0, 5.0, 3.0));
+}
+
+TEST(Triangle3Test, NonfiniteCoordinatesCannotBeClassified) {
+    const Triangle3 triangle(
+        Vector3(0, 0, std::numeric_limits<double>::quiet_NaN()),
+        Vector3(1, 0, 0), Vector3(0, 1, 0));
+
+    EXPECT_THROW((void)triangle.is_degenerate(), std::invalid_argument);
 }
