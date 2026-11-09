@@ -48,9 +48,8 @@ std::optional<AABB> Triangle3::bounds() const {
     const std::array vertices{a, b, c};
 
     for (const auto& vertex : vertices) {
-        if (!Vector3::isfinite_vec(vertex)) {
+        if (!Vector3::isfinite_vec(vertex))
             return std::nullopt;
-        }
     }
 
     const Vector3 min{

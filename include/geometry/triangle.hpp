@@ -1,5 +1,6 @@
 #ifndef TRIANGLE3_HPP_
 #define TRIANGLE3_HPP_
+
 #include "vector3.hpp"
 #include "aabb.hpp"
 
@@ -20,8 +21,7 @@ public:
     ~Triangle3();
 
     double area() const;
-    // Exact collinearity; invalid coordinates or arithmetic modes throw.
-    bool   is_degenerate() const;
+    bool is_degenerate() const; // Exact collinearity, invalid coordinates or arithmetic modes throw
 
     Vector3 edge_AB() const;
     Vector3 edge_AC() const;

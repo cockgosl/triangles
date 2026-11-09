@@ -1,0 +1,28 @@
+Language: Cpp
+
+BasedOnStyle: LLVM
+IndentWidth: 4
+# ColumnLimit: 130
+BreakBeforeBraces: Attach
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+AccessModifierOffset: -4
+NamespaceIndentation: None
+IncludeBlocks: Preserve
+KeepEmptyLinesAtTheStartOfBlocks: true
+ReflowComments: false
+
+PackParameters:
+  BinPack: AlwaysOnePerLine
+AlignAfterOpenBracket: true
+BreakAfterOpenBracketFunction: false
+BreakBeforeCloseBracketFunction: false
+
+MaxEmptyLinesToKeep: 2
+KeepEmptyLines:
+  AtStartOfBlock: true
+
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: WithoutElse
+SortIncludes: Never

@@ -12,13 +12,12 @@ private:
     Vector3 min_;
     Vector3 max_;
 
-    AABB(const Vector3& min, const Vector3& max);
+    AABB(const Vector3& min,
+         const Vector3& max);
 
 public:
-    static std::optional<AABB> Create(
-        const Vector3& min,
-        const Vector3& max
-    );
+    static std::optional<AABB> Create(const Vector3& min,
+                                      const Vector3& max);
 
     const Vector3& get_min() const noexcept;
     const Vector3& get_max() const noexcept;
@@ -30,6 +29,6 @@ public:
     Vector3 extent() const noexcept;
 };
 
-}  // namespace triangles
+} // namespace triangles
 
 #endif //AABB_HPP_
