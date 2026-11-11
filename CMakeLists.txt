@@ -78,6 +78,11 @@ if(BUILD_APP)
         glfw
         glm::glm
     )
+    target_compile_definitions(
+        triangles.out
+        PRIVATE
+        SHADER_DIR="${SHADER_BUILD_DIR}"
+    )
 endif()
 
 include(CTest)
