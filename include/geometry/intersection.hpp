@@ -1,4 +1,5 @@
 #pragma once
+// TODO - Header guears or pragma, need discussion
 
 #include "line3.hpp"
 #include "plane3.hpp"

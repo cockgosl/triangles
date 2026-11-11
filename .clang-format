@@ -2,7 +2,7 @@ Language: Cpp
 
 BasedOnStyle: LLVM
 IndentWidth: 4
-# ColumnLimit: 130
+ColumnLimit: 130
 BreakBeforeBraces: Attach
 DerivePointerAlignment: false
 PointerAlignment: Left
@@ -12,6 +12,7 @@ NamespaceIndentation: None
 IncludeBlocks: Preserve
 KeepEmptyLinesAtTheStartOfBlocks: true
 ReflowComments: false
+AllowShortEnumsOnASingleLine: false
 
 PackParameters:
   BinPack: AlwaysOnePerLine
@@ -23,6 +24,11 @@ MaxEmptyLinesToKeep: 2
 KeepEmptyLines:
   AtStartOfBlock: true
 
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortFunctionsOnASingleLine: Empty
+# AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortIfStatementsOnASingleLine: Never
+RemoveBracesLLVM: true
+AllowShortLoopsOnASingleLine: false
 SortIncludes: Never
+
+

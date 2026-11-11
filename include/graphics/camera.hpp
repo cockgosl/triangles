@@ -12,10 +12,15 @@ struct CameraConfig {
     float far_plane = 2000.0f;
 };
 
-enum class CameraMovement { kForward, kBackward, kLeft, kRight };
+enum class CameraMovement {
+    kForward,
+    kBackward,
+    kLeft,
+    kRight
+};
 
 class Camera {
-  private:
+private:
     glm::vec3 position_ = {0.0f, 0.0f, 3.0f};
     float aspect_ratio_ = 4.0f / 3.0f;
 
@@ -26,15 +31,19 @@ class Camera {
 
     CameraConfig config_{};
 
-  public:
-    Camera(const glm::vec3 &position, float aspect_ratio,
-           const CameraConfig &config)
-        : position_(position), aspect_ratio_(aspect_ratio), config_(config) {}
+public:
+    Camera(const glm::vec3& position,
+           float aspect_ratio,
+           const CameraConfig& config)
+        : position_(position),
+          aspect_ratio_(aspect_ratio),
+          config_(config) {}
 
     void SetAspectRatio(float aspect_ration);
-
-    void Move(CameraMovement direction, float delta_time);
-    void Rotate(float x_offset, float y_offset);
+    void Move(CameraMovement direction,
+              float delta_time);
+    void Rotate(float x_offset,
+                float y_offset);
 
     glm::mat4 GetViewMatrix() const;
     glm::mat4 GetProjectionMatrix() const;

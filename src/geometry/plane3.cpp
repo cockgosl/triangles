@@ -11,20 +11,21 @@ namespace triangles {
 
 namespace {
 
-bool valid_triangle(const Triangle3 &triangle) {
+bool valid_triangle(const Triangle3& triangle) {
     try {
         return !triangle.is_degenerate();
-    } catch (const std::invalid_argument &) {
+    } catch (const std::invalid_argument&) {
         return false;
-    } catch (const std::out_of_range &) {
+    } catch (const std::out_of_range&) {
         return false;
-    } catch (const std::runtime_error &) {
+    } catch (const std::runtime_error&) {
         return false;
     }
 }
 
+// clang-format off
 std::optional<double> parallel_coefficient_ratio(const Plane3& plane1,
-                                                const Plane3& plane2) {
+                                                 const Plane3& plane2) {
     const std::array coefficients{
         std::pair{plane1.get_a(), plane2.get_a()},
         std::pair{plane1.get_b(), plane2.get_b()},
@@ -60,37 +61,38 @@ std::optional<double> parallel_coefficient_ratio(const Plane3& plane1,
         const double scaled = ratio * second;
         if (!std::isfinite(scaled) || !Vector3::compare_f(first, scaled))
             return std::nullopt;
-
     }
+
     return ratio;
 }
-
+// clang-format on
 } // namespace
 
 
 bool Plane3::is_parallel(const Plane3& plane1,
-                 const Plane3& plane2) {
+                         const Plane3& plane2) {
     return parallel_coefficient_ratio(plane1, plane2).has_value();
 }
 
 bool Plane3::is_coincide(const Plane3& plane1,
-                 const Plane3& plane2) {
+                         const Plane3& plane2) {
     const auto ratio = parallel_coefficient_ratio(plane1, plane2);
     if (!ratio)
         return false;
 
     const double scaled_d = *ratio * plane2.get_d();
-    return std::isfinite(scaled_d) &&
-           Vector3::compare_f(plane1.get_d(), scaled_d);
+
+    return std::isfinite(scaled_d) && Vector3::compare_f(plane1.get_d(), scaled_d);
 }
 
 
 std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
-    if (!valid_triangle(triangle)) return std::nullopt;
+    if (!valid_triangle(triangle))
+        return std::nullopt;
 
-    Vector3 edge3 = triangle.a;
-    Vector3 edge2 = triangle.edge_AB();
-    Vector3 edge1 = triangle.edge_AC();
+    Vector3 edge3  = triangle.a;
+    Vector3 edge2  = triangle.edge_AB();
+    Vector3 edge1  = triangle.edge_AC();
     Vector3 normal = edge1.cross(edge2);
 
     return Plane3::Create(edge3, normal);
@@ -99,7 +101,8 @@ std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
 std::optional<Plane3> Plane3::Create(const Vector3& point1,
                                      const Vector3& point2,
                                      const Vector3& point3) {
-    if (!valid_triangle(Triangle3(point1, point2, point3))) return std::nullopt;
+    if (!valid_triangle(Triangle3(point1, point2, point3)))
+        return std::nullopt;
 
     Vector3 edge_1 = point1 - point3;
     Vector3 edge_2 = point2 - point3;

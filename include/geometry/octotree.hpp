@@ -17,7 +17,7 @@ struct OctotreeConfig {
 };
 
 class Octotree {
-  private:
+private:
     struct Entry {
         std::size_t object_id;
         AABB bounds;
@@ -27,46 +27,45 @@ class Octotree {
         AABB bounds;
 
         std::vector<Entry> entries;
-
         std::array<std::unique_ptr<Node>, 8> children;
 
-        explicit Node(const AABB &bounds);
-
+        explicit Node(const AABB& bounds);
         bool is_leaf() const noexcept;
     };
 
     AABB domain_;
     OctotreeConfig config_;
-
     std::unique_ptr<Node> root_;
-
     std::unordered_set<std::size_t> object_ids_;
 
-    Octotree(const AABB &domain, const OctotreeConfig &config);
+    Octotree(const AABB& domain,
+             const OctotreeConfig& config);
 
-    bool subdivide(Node &node);
+    bool subdivide(Node& node);
+    Node* find_containing_child(Node& node,
+                                const AABB& bounds) const;
+    void insert(Node& node,
+                Entry entry,
+                std::size_t depth);
+    void query(const Node& node,
+               const AABB& bounds,
+               std::vector<std::size_t>& result) const;
 
-    Node *find_containing_child(Node &node, const AABB &bounds) const;
+public:
+    static std::optional<Octotree> Create(const AABB& domain,
+                                          const OctotreeConfig& config = {},
+                                          std::string* error = nullptr);
 
-    void insert(Node &node, Entry entry, std::size_t depth);
+    Octotree(const Octotree&) = delete;
+    Octotree& operator=(const Octotree&) = delete;
 
-    void query(const Node &node, const AABB &bounds,
-               std::vector<std::size_t> &result) const;
+    Octotree(Octotree&&) noexcept = default;
+    Octotree& operator=(Octotree&&) noexcept = default;
 
-  public:
-    static std::optional<Octotree> Create(const AABB &domain,
-                                          const OctotreeConfig &config = {},
-                                          std::string *error = nullptr);
+    bool insert(std::size_t object_id,
+                const AABB& bounds);
 
-    Octotree(const Octotree &) = delete;
-    Octotree &operator=(const Octotree &) = delete;
-
-    Octotree(Octotree &&) noexcept = default;
-    Octotree &operator=(Octotree &&) noexcept = default;
-
-    bool insert(std::size_t object_id, const AABB &bounds);
-
-    std::vector<std::size_t> query(const AABB &bounds) const;
+    std::vector<std::size_t> query(const AABB& bounds) const;
 };
 
 } // namespace triangles

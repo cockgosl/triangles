@@ -31,7 +31,7 @@ struct GeneratedTriangle {
 };
 
 class Generator {
-  private:
+private:
     AABB domain_;
     AABB centroid_domain_;
 
@@ -43,21 +43,20 @@ class Generator {
 
     std::mt19937 gen_;
 
-    Generator(const GeneratorConfig &config, const AABB &centroid_domain,
-              double min_edge_length, double max_edge_length);
+    Generator(const GeneratorConfig& config,
+              const AABB& centroid_domain,
+              double min_edge_length,
+              double max_edge_length);
 
     std::optional<Triangle3> generate_local_triangle();
-    std::optional<Triangle3>
-    generate_random_orientation(const Triangle3 &triangle);
+    std::optional<Triangle3> generate_random_orientation(const Triangle3& triangle);
 
-  public:
-    static std::optional<Generator> Create(const GeneratorConfig &config,
-                                           std::string *error = nullptr);
+public:
+    static std::optional<Generator> Create(const GeneratorConfig& config,
+                                           std::string* error = nullptr);
 
     std::optional<GeneratedTriangle> generate_triangle();
-
-    std::optional<std::vector<GeneratedTriangle>>
-    generate_triangles(std::size_t count);
+    std::optional<std::vector<GeneratedTriangle>> generate_triangles(std::size_t count);
 };
 
 } // namespace triangles
