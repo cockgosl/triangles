@@ -178,7 +178,7 @@ std::optional<Triangle3> Generator::generate_random_orientation(const Triangle3&
 }
 
 // TODO - try-catch logic, put away
-std::optional<GeneratedTriangle> Generator::generate_triangle() {
+std::optional<SceneTriangle> Generator::generate_triangle() {
     try {
         auto local_triangle = generate_local_triangle();
         if (!local_triangle)
@@ -207,7 +207,7 @@ std::optional<GeneratedTriangle> Generator::generate_triangle() {
         if (!domain_.contains(*bounds))
             return std::nullopt;
 
-        return GeneratedTriangle{triangle, *bounds};
+        return SceneTriangle{triangle, *bounds};
     } catch (const std::invalid_argument&) {
         return std::nullopt;
     } catch (const std::out_of_range&) {
@@ -217,8 +217,8 @@ std::optional<GeneratedTriangle> Generator::generate_triangle() {
     }
 }
 
-std::optional<std::vector<GeneratedTriangle>> Generator::generate_triangles(std::size_t count) {
-    std::vector<GeneratedTriangle> result;
+std::optional<std::vector<SceneTriangle>> Generator::generate_triangles(std::size_t count) {
+    std::vector<SceneTriangle> result;
     result.reserve(count);
 
     for (std::size_t index = 0; index < count; ++index) {
