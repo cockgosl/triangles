@@ -7,7 +7,6 @@
 #include "geometry/triangle.hpp"
 #include "geometry/vector3.hpp"
 
-#include <cstdlib>
 #include <glad/gl.h>
 
 #include <array>

@@ -1,21 +1,10 @@
 #include "geometry/vector3.hpp"
 
-#include <limits>
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
 namespace triangles {
-
-constexpr double EPSILON = std::numeric_limits<double>::epsilon();
-
-/*  TODO - move && create into general_utils file
-    inconsistent logic - in vector3.cpp (lines 30-32) comparison
-    we should divide approx compare & precise compare */
-bool Vector3::compare_f(double first, double second) {
-    return (std::fabs(first - second) < EPSILON);
-}
-
 
 Vector3::Vector3(double x, double y, double z)
         :x(x), y(y), z(z) {}
@@ -23,21 +12,16 @@ Vector3::Vector3(double x, double y, double z)
 Vector3::~Vector3() = default;
 
 double Vector3::length() const {
-    return std::sqrt(x * x + y * y + z * z);
+    return std::hypot(x, y, z);
 }
 
 Vector3 Vector3::normalized() const {
-    if (compare_f(x, 0.0) &&
-        compare_f(y, 0.0) &&
-        compare_f(z, 0.0)) throw std::invalid_argument("attemp normalizing null-vector");
-
+    if (!valid_vec(*this)) throw std::invalid_argument("Cannot normalize a zero or nonfinite vector.");
+    
     double max = std::max({std::fabs(x), std::fabs(y), std::fabs(z)});
     Vector3 ir_vec = Vector3(x / max, y / max, z / max); // ir = intermediate
 
     double len = ir_vec.length();
-    if (len < EPSILON) {    // FIXME - unnecessary check
-        return Vector3();
-    }
 
     return Vector3(ir_vec.x / len, ir_vec.y / len, ir_vec.z / len);
 }
@@ -74,18 +58,6 @@ Vector3 Vector3::operator*(double scalar) const {
                    z * scalar);
 }
 
-bool Vector3::operator==(const Vector3& vector) const {
-    return (compare_f(x, vector.x) &&
-            compare_f(y, vector.y) &&
-            compare_f(z, vector.z));
-}
-
-bool Vector3::valid_vec(const Vector3& vector) {
-    if (!isfinite_vec(vector)) return false;
-
-    return !(vector == Vector3(0.0, 0.0, 0.0));
-}
-
 bool Vector3::isfinite_vec(const Vector3& vector) {
     if (!std::isfinite(vector.x) ||
         !std::isfinite(vector.y) ||
@@ -93,6 +65,20 @@ bool Vector3::isfinite_vec(const Vector3& vector) {
         return false;
 
     return true;
+}
+
+bool Vector3::operator==(const Vector3& vector) const {
+    if (!isfinite_vec(vector)) return false;
+
+    return (x == vector.x &&
+            y == vector.y &&
+            z == vector.z);
+}
+
+bool Vector3::valid_vec(const Vector3& vector) {
+    if (!isfinite_vec(vector)) return false;
+
+    return !(vector == Vector3(0.0, 0.0, 0.0));
 }
 
 } // namespace triangles

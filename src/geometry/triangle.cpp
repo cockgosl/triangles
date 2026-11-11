@@ -7,6 +7,19 @@
 
 namespace triangles {
 
+namespace {
+
+Vector3 triangle_area_vector(const Triangle3& triangle) {
+    const auto result = robust::triangle_cross(
+        {triangle.a.x, triangle.a.y, triangle.a.z},
+        {triangle.b.x, triangle.b.y, triangle.b.z},
+        {triangle.c.x, triangle.c.y, triangle.c.z});
+
+    return {result[0], result[1], result[2]};
+}
+
+} // namespace
+
 Triangle3::Triangle3(const Vector3& vector_1,
                      const Vector3& vector_2,
                      const Vector3& vector_3)
@@ -15,7 +28,7 @@ Triangle3::Triangle3()  = default;
 Triangle3::~Triangle3() = default;
 
 double Triangle3::area() const {
-    return edge_AB().cross(edge_AC()).length() / 2.0;
+    return triangle_area_vector(*this).length() / 2.0;
 }
 
 bool Triangle3::is_degenerate() const {
@@ -41,7 +54,7 @@ Vector3 Triangle3::edge_BC() const {
 }
 
 Vector3 Triangle3::normal() const {
-    return edge_AB().cross(edge_AC()).normalized();
+    return triangle_area_vector(*this).normalized();
 }
 
 std::optional<AABB> Triangle3::bounds() const {

@@ -23,7 +23,6 @@ public:
     bool operator==(const Vector3& vector) const;
 
     static bool valid_vec(const Vector3& vector);
-    static bool compare_f(double first, double second);
     static bool isfinite_vec(const Vector3& vector);
 };
 

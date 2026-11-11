@@ -1,11 +1,9 @@
 #include "geometry/plane3.hpp"
+#include "geometry/robust_predicates.hpp"
+#include "geometry/vector3.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <ranges>
 #include <stdexcept>
-#include <utility>
+#include <cmath>
 
 namespace triangles {
 
@@ -23,92 +21,77 @@ bool valid_triangle(const Triangle3& triangle) {
     }
 }
 
-// clang-format off
-std::optional<double> parallel_coefficient_ratio(const Plane3& plane1,
-                                                 const Plane3& plane2) {
-    const std::array coefficients{
-        std::pair{plane1.get_a(), plane2.get_a()},
-        std::pair{plane1.get_b(), plane2.get_b()},
-        std::pair{plane1.get_c(), plane2.get_c()},
-        std::pair{plane1.get_d(), plane2.get_d()}};
-
-    const bool all_finite = std::ranges::all_of(coefficients, [](const auto& pair) {
-        return std::isfinite(pair.first) && std::isfinite(pair.second);
-    });
-
-    if (!all_finite)
-        return std::nullopt;
-
-    const auto normal_coefficients = coefficients | std::views::take(3);
-    const bool first_has_normal = std::ranges::any_of(
-        normal_coefficients, [](const auto& pair) { return !Vector3::compare_f(pair.first, 0.0); });
-
-    const auto pivot = std::ranges::max_element(
-        normal_coefficients, {}, [](const auto& pair) {
-            return std::fabs(pair.second);
-        });
-
-    if (!first_has_normal || Vector3::compare_f(pivot->second, 0.0))
-        return std::nullopt;
-
-
-    // Use the largest normal coefficient as the only divisor
-    const double ratio = pivot->first / pivot->second;
-    if (!std::isfinite(ratio) || Vector3::compare_f(ratio, 0.0))
-        return std::nullopt;
-
-    for (const auto& [first, second] : normal_coefficients) {
-        const double scaled = ratio * second;
-        if (!std::isfinite(scaled) || !Vector3::compare_f(first, scaled))
-            return std::nullopt;
-    }
-
-    return ratio;
-}
-// clang-format on
 } // namespace
 
 
 bool Plane3::is_parallel(const Plane3& plane1,
                          const Plane3& plane2) {
-    return parallel_coefficient_ratio(plane1, plane2).has_value();
+    const Vector3 n1 = plane1.get_normal();
+    const Vector3 n2 = plane2.get_normal();
+
+    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false; 
+
+    const auto xy = robust::orient2d({n1.x, n1.y}, 
+                                     {n2.x, n2.y}, 
+                                     {0.0 , 0.0 });
+    const auto xz = robust::orient2d({n1.x, n1.z}, 
+                                     {n2.x, n2.z}, 
+                                     {0.0 , 0.0 });
+
+    const auto yz = robust::orient2d({n1.y, n1.z}, 
+                                     {n2.y, n2.z}, 
+                                     {0.0 , 0.0 });
+
+    return xy == robust::Sign::zero &&
+           xz == robust::Sign::zero &&
+           yz == robust::Sign::zero;
 }
 
 bool Plane3::is_coincide(const Plane3& plane1,
                          const Plane3& plane2) {
-    const auto ratio = parallel_coefficient_ratio(plane1, plane2);
-    if (!ratio)
-        return false;
+    const Vector3 n1 = plane1.get_normal();
+    const Vector3 n2 = plane2.get_normal();
 
-    const double scaled_d = *ratio * plane2.get_d();
+    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false; 
 
-    return std::isfinite(scaled_d) && Vector3::compare_f(plane1.get_d(), scaled_d);
+
+    const auto d1 = plane1.get_d();
+    const auto d2 = plane2.get_d();
+
+    const auto ad = robust::orient2d({n1.x, d1}, 
+                                     {n2.x, d2}, 
+                                     {0.0, 0.0});
+
+    const auto bd = robust::orient2d({n1.y, d1}, 
+                                     {n2.y, d2}, 
+                                     {0.0, 0.0});
+
+    const auto cd = robust::orient2d({n1.z, d1}, 
+                                     {n2.z, d2}, 
+                                     {0.0, 0.0});
+
+    return is_parallel(plane1, plane2) &&
+           ad == robust::Sign::zero &&
+           bd == robust::Sign::zero &&
+           cd == robust::Sign::zero;
 }
-
 
 std::optional<Plane3> Plane3::Create(const Triangle3& triangle) {
     if (!valid_triangle(triangle))
         return std::nullopt;
 
-    Vector3 edge3  = triangle.a;
-    Vector3 edge2  = triangle.edge_AB();
-    Vector3 edge1  = triangle.edge_AC();
-    Vector3 normal = edge1.cross(edge2);
-
-    return Plane3::Create(edge3, normal);
+    return Plane3::Create(triangle.a, -triangle.normal());
 }
 
 std::optional<Plane3> Plane3::Create(const Vector3& point1,
                                      const Vector3& point2,
                                      const Vector3& point3) {
-    if (!valid_triangle(Triangle3(point1, point2, point3)))
+    const Triangle3 triangle(point1, point2, point3);
+
+    if (!valid_triangle(triangle))
         return std::nullopt;
 
-    Vector3 edge_1 = point1 - point3;
-    Vector3 edge_2 = point2 - point3;
-    Vector3 normal = edge_1.cross(edge_2);
-
-    return Plane3::Create(point3, normal);
+    return Plane3::Create(point3, triangle.normal());
 }
 
 std::optional<Plane3> Plane3::Create(const Vector3& point,
@@ -119,7 +102,12 @@ std::optional<Plane3> Plane3::Create(const Vector3& point,
     if (!(Vector3::isfinite_vec(point)))
         return std::nullopt;
 
-    return Plane3(point, normal);
+    const Plane3 plane(point, normal);
+
+    if (!std::isfinite(plane.get_d()))
+        return std::nullopt;
+    
+    return plane;
 }
 
 Plane3::Plane3(const Vector3& point,

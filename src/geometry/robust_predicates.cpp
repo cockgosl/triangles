@@ -390,4 +390,27 @@ Sign orient3d(const Coordinates3& a,
     return orient3d_exact(a, b, c, d);
 }
 
+Coordinates3 triangle_cross(const Coordinates3& a,
+                            const Coordinates3& b,
+                            const Coordinates3& c) {
+    require_environment();
+    require_coordinates(a);
+    require_coordinates(b);
+    require_coordinates(c);
+
+    const auto abx = from_pair(two_diff_raw(b[0], a[0]));
+    const auto aby = from_pair(two_diff_raw(b[1], a[1]));
+    const auto abz = from_pair(two_diff_raw(b[2], a[2]));
+
+    const auto acx = from_pair(two_diff_raw(c[0], a[0]));
+    const auto acy = from_pair(two_diff_raw(c[1], a[1]));
+    const auto acz = from_pair(two_diff_raw(c[2], a[2]));
+
+    const auto nx = exact_minor(aby, abz, acy, acz);
+    const auto ny = exact_minor(abz, abx, acz, acx);
+    const auto nz = exact_minor(abx, aby, acx, acy);
+
+    return {nx.back(), ny.back(), nz.back()};
+}
+
 } // namespace triangles::robust
