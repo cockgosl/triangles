@@ -15,7 +15,7 @@ enum class TriangleSource {
 };
 
 class Application {
-  private:
+private:
     bool Initialize();
     void RenderFrame();
     void ProcessInput(float delta_time);
@@ -25,7 +25,7 @@ class Application {
     ::graphics::Camera camera_;
     ::graphics::TriangleRenderer renderer_;
 
-  public:
+public:
     explicit Application(TriangleSource source = TriangleSource::kGenerator);
     ~Application() noexcept = default;
 

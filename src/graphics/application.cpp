@@ -24,7 +24,8 @@ namespace triangles {
 namespace {
 
 std::optional<AABB> GetSceneBounds(const std::vector<SceneTriangle>& triangles) {
-    if (triangles.empty()) return std::nullopt;
+    if (triangles.empty())
+        return std::nullopt;
 
     Vector3 min = triangles.front().bounds.get_min();
     Vector3 max = triangles.front().bounds.get_max();
@@ -65,30 +66,25 @@ std::optional<::graphics::ShadowConfig> GetShadowConfig(const AABB& bounds) {
 
     const double light_distance = std::max(bounds.extent().length(), 1.0);
 
-    const Vector3 light_direction{shadow_config.light_position.x,
-                                  shadow_config.light_position.y,
-                                  shadow_config.light_position.z};
+    const Vector3 light_direction{shadow_config.light_position.x, shadow_config.light_position.y, shadow_config.light_position.z};
 
     const Vector3 light_position = center + light_direction.normalized() * light_distance;
 
-    const double light_magnitude = std::max({std::abs(light_position.x), 
-                                             std::abs(light_position.y), 
-                                             std::abs(light_position.z)});
+    const double light_magnitude = std::max({std::abs(light_position.x), std::abs(light_position.y), std::abs(light_position.z)});
 
-    if (light_magnitude > std::numeric_limits<float>::max()) return std::nullopt;
+    if (light_magnitude > std::numeric_limits<float>::max())
+        return std::nullopt;
 
-    shadow_config.light_position = {static_cast<float>(light_position.x),
-                                    static_cast<float>(light_position.y),
+    shadow_config.light_position = {static_cast<float>(light_position.x), static_cast<float>(light_position.y),
                                     static_cast<float>(light_position.z)};
 
-    shadow_config.light_target   = {static_cast<float>(center.x),
-                                    static_cast<float>(center.y), 
-                                    static_cast<float>(center.z)};
+    shadow_config.light_target = {static_cast<float>(center.x), static_cast<float>(center.y), static_cast<float>(center.z)};
 
     return shadow_config;
 }
 
-std::optional<std::vector<bool>> FindIntersectingTriangles(const std::vector<SceneTriangle>& triangles, const AABB& domain,
+std::optional<std::vector<bool>> FindIntersectingTriangles(const std::vector<SceneTriangle>& triangles,
+                                                           const AABB& domain,
                                                            const OctotreeConfig& config) {
     std::string error;
     auto tree = Octotree::Create(domain, config, &error);
@@ -111,7 +107,8 @@ std::optional<std::vector<bool>> FindIntersectingTriangles(const std::vector<Sce
         const auto candidates = tree->query(triangles[i].bounds);
 
         for (const std::size_t j : candidates) {
-            if (j <= i) continue;
+            if (j <= i)
+                continue;
             const auto result = intersection(triangles[i].triangle, triangles[j].triangle);
 
             if (!result.has_value()) {
@@ -127,8 +124,10 @@ std::optional<std::vector<bool>> FindIntersectingTriangles(const std::vector<Sce
     return intersecting;
 }
 
-std::vector<float> ConvertTrianglesToVertices(const std::vector<SceneTriangle>& triangles, const std::vector<bool>& intersecting) {
-    if (triangles.size() != intersecting.size()) return {};
+std::vector<float> ConvertTrianglesToVertices(const std::vector<SceneTriangle>& triangles,
+                                              const std::vector<bool>& intersecting) {
+    if (triangles.size() != intersecting.size())
+        return {};
 
     constexpr std::array<float, 3> kDefaultColor{1.0f, 0.5f, 0.2f};
     constexpr std::array<float, 3> kIntersectionColor{0.0f, 0.2f, 1.0f};
@@ -144,7 +143,8 @@ std::vector<float> ConvertTrianglesToVertices(const std::vector<SceneTriangle>& 
 
         for (const Vector3* point : points) {
             const double magnitude = std::max({std::abs(point->x), std::abs(point->y), std::abs(point->z)});
-            if (magnitude > std::numeric_limits<float>::max()) return {};
+            if (magnitude > std::numeric_limits<float>::max())
+                return {};
             vertices.push_back(static_cast<float>(point->x));
             vertices.push_back(static_cast<float>(point->y));
             vertices.push_back(static_cast<float>(point->z));
@@ -165,12 +165,15 @@ std::vector<float> ConvertTrianglesToVertices(const std::vector<SceneTriangle>& 
 } // namespace
 
 Application::Application(TriangleSource source)
-    : source_(source), camera_(glm::vec3{0.0f, 0.0f, 3.0f}, 800.0f / 600.0f, ::graphics::CameraConfig{}) {}
+    : source_(source),
+      camera_(glm::vec3{0.0f, 0.0f, 3.0f}, 800.0f / 600.0f, ::graphics::CameraConfig{}) {}
 
 
 bool Application::Initialize() {
-    if (source_ == TriangleSource::kGenerator) std::cout << "Enter number of triangles: " << std::flush;
-    else std::cout << "Enter number N of triangles and their coordinates: " << std::flush;
+    if (source_ == TriangleSource::kGenerator)
+        std::cout << "Enter number of triangles: " << std::flush;
+    else
+        std::cout << "Enter number N of triangles and their coordinates: " << std::flush;
 
     std::string error;
     const auto triangle_count = read_triangle_count(std::cin, &error);
@@ -201,7 +204,8 @@ bool Application::Initialize() {
         auto generator = Generator::Create(config, &error);
         if (generator) {
             triangles = generator->generate_triangles(*triangle_count);
-            if (!triangles) error = "Failed to generate triangles.";
+            if (!triangles)
+                error = "Failed to generate triangles.";
         }
     }
 
@@ -219,7 +223,8 @@ bool Application::Initialize() {
 
     const OctotreeConfig config{.max_depth = 8, .max_objects_per_node = 16};
     auto intersection_results = FindIntersectingTriangles(*triangles, *domain, config);
-    if (!intersection_results) return false;
+    if (!intersection_results)
+        return false;
 
     auto vertices = ConvertTrianglesToVertices(*triangles, *intersection_results);
     if (vertices.empty()) {
@@ -270,14 +275,19 @@ void Application::ProcessInput(float delta_time) {
     const auto [x_offset, y_offset] = window_->ConsumeMouseDelta();
     camera_.Rotate(static_cast<float>(x_offset), static_cast<float>(y_offset));
 
-    if (window_->IsKeyPressed(::graphics::Key::kW)) camera_.Move(::graphics::CameraMovement::kForward, delta_time);
-    if (window_->IsKeyPressed(::graphics::Key::kS)) camera_.Move(::graphics::CameraMovement::kBackward, delta_time);
-    if (window_->IsKeyPressed(::graphics::Key::kA)) camera_.Move(::graphics::CameraMovement::kLeft, delta_time);
-    if (window_->IsKeyPressed(::graphics::Key::kD)) camera_.Move(::graphics::CameraMovement::kRight, delta_time);
+    if (window_->IsKeyPressed(::graphics::Key::kW))
+        camera_.Move(::graphics::CameraMovement::kForward, delta_time);
+    if (window_->IsKeyPressed(::graphics::Key::kS))
+        camera_.Move(::graphics::CameraMovement::kBackward, delta_time);
+    if (window_->IsKeyPressed(::graphics::Key::kA))
+        camera_.Move(::graphics::CameraMovement::kLeft, delta_time);
+    if (window_->IsKeyPressed(::graphics::Key::kD))
+        camera_.Move(::graphics::CameraMovement::kRight, delta_time);
 }
 
 int Application::Run() {
-    if (!Initialize()) return EXIT_FAILURE;
+    if (!Initialize())
+        return EXIT_FAILURE;
 
     auto last_frame_time = std::chrono::steady_clock::now();
 
@@ -292,7 +302,8 @@ int Application::Run() {
 
         ProcessInput(delta_time);
 
-        if (!window_->ShouldClose()) RenderFrame();
+        if (!window_->ShouldClose())
+            RenderFrame();
     }
 
     return EXIT_SUCCESS;

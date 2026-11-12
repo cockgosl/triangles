@@ -163,11 +163,11 @@ bool TriangleRenderer::Initialize(const std::vector<float> &vertices,
   const std::filesystem::path shader_dir{SHADER_DIR};
 
     auto vertex_source = ReadTextFile((shader_dir / "triangle.vert.glsl").string());
-    
+
     auto fragment_source = ReadTextFile((shader_dir / "triangle.frag.glsl").string());
-    
+
     auto depth_vertex_source = ReadTextFile((shader_dir / "depth.vert.glsl").string());
-    
+
     auto depth_fragment_source = ReadTextFile((shader_dir / "depth.frag.glsl").string());
 
   if (!(vertex_source && fragment_source && depth_vertex_source &&

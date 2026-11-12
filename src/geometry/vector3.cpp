@@ -16,11 +16,11 @@ double Vector3::length() const {
 }
 
 Vector3 Vector3::normalized() const {
-    if (!valid_vec(*this)) throw std::invalid_argument("Cannot normalize a zero or nonfinite vector.");
-    
+    if (!valid_vec(*this))
+        throw std::invalid_argument("Cannot normalize a zero or nonfinite vector.");
+
     double max = std::max({std::fabs(x), std::fabs(y), std::fabs(z)});
     Vector3 ir_vec = Vector3(x / max, y / max, z / max); // ir = intermediate
-
     double len = ir_vec.length();
 
     return Vector3(ir_vec.x / len, ir_vec.y / len, ir_vec.z / len);

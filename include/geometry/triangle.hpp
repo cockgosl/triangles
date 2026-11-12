@@ -41,9 +41,11 @@ struct SceneTriangle {
 
 inline constexpr std::size_t max_triangle_count = 999999;
 
-[[nodiscard]] std::optional<std::size_t> read_triangle_count(std::istream& input, std::string* error = nullptr);
-[[nodiscard]] std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input, std::size_t count,
-                                                                     std::string* error = nullptr);
+[[nodiscard]] std::optional<std::size_t> read_triangle_count(std::istream& input,
+                                                             std::string* error = nullptr);
+[[nodiscard]] std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input,
+                                                                       std::size_t count,
+                                                                       std::string* error = nullptr);
 
 } // namespace triangles
 

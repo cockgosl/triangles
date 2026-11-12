@@ -8,16 +8,16 @@ namespace {
 
 bool parallel_directions(const Vector3& d1,
                          const Vector3& d2) {
-    const auto xy = robust::orient2d({d1.x, d1.y}, 
-                                     {d2.x, d2.y}, 
+    const auto xy = robust::orient2d({d1.x, d1.y},
+                                     {d2.x, d2.y},
                                      {0.0 , 0.0 });
 
-    const auto xz = robust::orient2d({d1.x, d1.z}, 
-                                     {d2.x, d2.z}, 
+    const auto xz = robust::orient2d({d1.x, d1.z},
+                                     {d2.x, d2.z},
                                      {0.0 , 0.0 });
 
-    const auto yz = robust::orient2d({d1.y, d1.z}, 
-                                     {d2.y, d2.z}, 
+    const auto yz = robust::orient2d({d1.y, d1.z},
+                                     {d2.y, d2.z},
                                      {0.0, 0.0 });
 
     return xy == robust::Sign::zero &&
@@ -86,12 +86,9 @@ Line3::Line3(const Vector3& direction,
 
 Line3::~Line3() = default;
 
-bool Line3::operator==(const Line3& line) const { 
-    const bool directions_match =
-        parallel_directions(direction_, line.direction_);
-
-    const bool point_belongs =
-        point_on_line(line.point_, point_, direction_);
+bool Line3::operator==(const Line3& line) const {
+    const bool directions_match = parallel_directions(direction_, line.direction_);
+    const bool point_belongs = point_on_line(line.point_, point_, direction_);
 
     return directions_match && point_belongs;
 }

@@ -100,7 +100,8 @@ std::optional<AABB> Triangle3::bounds() const {
 }
 
 
-std::optional<std::size_t> read_triangle_count(std::istream& input, std::string* error) {
+std::optional<std::size_t> read_triangle_count(std::istream& input,
+                                               std::string* error) {
     if (error) error->clear();
 
     std::string token;
@@ -114,7 +115,9 @@ std::optional<std::size_t> read_triangle_count(std::istream& input, std::string*
     return std::nullopt;
 }
 
-std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input, std::size_t count, std::string* error) {
+std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input,
+                                                         std::size_t count,
+                                                         std::string* error) {
     if (error) error->clear();
 
     const auto fail = [error](const std::string& message) -> std::optional<std::vector<SceneTriangle>> {
@@ -122,7 +125,8 @@ std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input, st
         return std::nullopt;
     };
 
-    if (count == 0 || count > max_triangle_count) return fail("Expected an integer N with 0 < N < 1000000.");
+    if (count == 0 || count > max_triangle_count)
+        return fail("Expected an integer N with 0 < N < 1000000.");
 
     std::vector<SceneTriangle> result;
     result.reserve(count);
@@ -137,7 +141,8 @@ std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input, st
         }
 
         const auto bounds = triangle.bounds();
-        if (!bounds) return fail(prefix + "coordinates must be finite.");
+        if (!bounds)
+            return fail(prefix + "coordinates must be finite.");
 
         try {
             if (triangle.is_degenerate()) return fail(prefix + "vertices must not be collinear.");

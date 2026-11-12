@@ -31,7 +31,7 @@ struct ShadowConfig {
 };
 
 class TriangleRenderer final {
-  private:
+private:
     std::optional<ShaderProgram> shader_program_;
     std::optional<ShaderProgram> depth_shader_program_;
 
@@ -45,20 +45,20 @@ class TriangleRenderer final {
     GLuint shadow_depth_texture_ = 0;
 
     bool InitializeShadowMap();
-    void RenderShadowPass(const glm::mat4 &model,
-                          const glm::mat4 &light_space_matrix) const noexcept;
+    void RenderShadowPass(const glm::mat4& model,
+                          const glm::mat4& light_space_matrix) const noexcept;
 
-  public:
+public:
     TriangleRenderer() = default;
     ~TriangleRenderer() noexcept;
 
-    TriangleRenderer(const TriangleRenderer &) = delete;
-    TriangleRenderer &operator=(const TriangleRenderer &) = delete;
+    TriangleRenderer(const TriangleRenderer&) = delete;
+    TriangleRenderer& operator=(const TriangleRenderer&) = delete;
 
-    bool Initialize(const std::vector<float> &vertices,
-                    const ShadowConfig &shadow_config = {});
-    void Render(const glm::mat4 &view,
-                const glm::mat4 &projection) const noexcept;
+    bool Initialize(const std::vector<float>& vertices,
+                    const ShadowConfig& shadow_config = {});
+    void Render(const glm::mat4& view,
+                const glm::mat4& projection) const noexcept;
 };
 
 } // namespace graphics

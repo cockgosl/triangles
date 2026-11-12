@@ -13,7 +13,8 @@ using triangles::Vector3;
 constexpr double EPSILON = std::numeric_limits<double>::epsilon();
 
 
-TEST(Triangle3Test, Edges) {
+TEST(Triangle3Test,
+     Edges) {
     Triangle3 triangle(Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0));
 
     Vector3 ab = triangle.edge_AB();
@@ -28,13 +29,15 @@ TEST(Triangle3Test, Edges) {
     EXPECT_DOUBLE_EQ(ac.z, 0.0);
 }
 
-TEST(Triangle3Test, Area) {
+TEST(Triangle3Test,
+     Area) {
     Triangle3 triangle(Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0));
 
     EXPECT_NEAR(triangle.area(), 0.5, EPSILON);
 }
 
-TEST(Triangle3Test, Normal) {
+TEST(Triangle3Test,
+     Normal) {
     Triangle3 triangle(Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0));
 
     Vector3 normal = triangle.normal();
@@ -44,25 +47,23 @@ TEST(Triangle3Test, Normal) {
     EXPECT_NEAR(normal.z, 1.0, EPSILON);
 }
 
-TEST(Triangle3Test, SmallTriangleIsNotDegenerate) {
-    Triangle3 triangle(Vector3(0, 0, 0), Vector3(0x1p-100, 0, 0),
-                       Vector3(0, 0x1p-100, 0));
+TEST(Triangle3Test,
+     SmallTriangleIsNotDegenerate) {
+    Triangle3 triangle(Vector3(0, 0, 0), Vector3(0x1p-100, 0, 0), Vector3(0, 0x1p-100, 0));
 
     EXPECT_FALSE(triangle.is_degenerate());
 }
 
-TEST(Triangle3Test, Degenerate) {
+TEST(Triangle3Test,
+     Degenerate) {
     Triangle3 triangle(Vector3(0.0, 0.0, 0.0), Vector3(1.0, 1.0, 1.0), Vector3(2.0, 2.0, 2.0));
 
     EXPECT_TRUE(triangle.is_degenerate());
 }
 
-TEST(Triangle3Test, CalculatesBounds) {
-    const Triangle3 triangle{
-        Vector3{1.0, 2.0, 0.0},
-        Vector3{4.0, 1.0, 3.0},
-        Vector3{2.0, 5.0, 1.0}
-    };
+TEST(Triangle3Test,
+     CalculatesBounds) {
+    const Triangle3 triangle{Vector3{1.0, 2.0, 0.0}, Vector3{4.0, 1.0, 3.0}, Vector3{2.0, 5.0, 1.0}};
 
     const auto bounds = triangle.bounds();
 
@@ -72,15 +73,15 @@ TEST(Triangle3Test, CalculatesBounds) {
     EXPECT_EQ(bounds->get_max(), Vector3(4.0, 5.0, 3.0));
 }
 
-TEST(Triangle3Test, NonfiniteCoordinatesCannotBeClassified) {
-    const Triangle3 triangle(
-        Vector3(0, 0, std::numeric_limits<double>::quiet_NaN()),
-        Vector3(1, 0, 0), Vector3(0, 1, 0));
+TEST(Triangle3Test,
+     NonfiniteCoordinatesCannotBeClassified) {
+    const Triangle3 triangle(Vector3(0, 0, std::numeric_limits<double>::quiet_NaN()), Vector3(1, 0, 0), Vector3(0, 1, 0));
 
     EXPECT_THROW((void)triangle.is_degenerate(), std::invalid_argument);
 }
 
-TEST(TriangleInputTest, ReadsCountWithinStrictBounds) {
+TEST(TriangleInputTest,
+     ReadsCountWithinStrictBounds) {
     for (const auto* token : {"1", "999999"}) {
         SCOPED_TRACE(token);
         std::istringstream input{token};
@@ -100,7 +101,8 @@ TEST(TriangleInputTest, ReadsCountWithinStrictBounds) {
     }
 }
 
-TEST(TriangleInputTest, ReadsVerticesAndBoundsAtLargeOffset) {
+TEST(TriangleInputTest,
+     ReadsVerticesAndBoundsAtLargeOffset) {
     std::istringstream input{"1000000000000 +2 0  1000000000001 2 0  1000000000000 3 0\n"
                              "1000000000002 4 0  1000000000003 4 0  1000000000002 5 0"};
     std::string error = "previous error";
@@ -117,7 +119,8 @@ TEST(TriangleInputTest, ReadsVerticesAndBoundsAtLargeOffset) {
     EXPECT_EQ((*result)[1].triangle.c, Vector3(1000000000002, 5, 0));
 }
 
-TEST(TriangleInputTest, RejectsInvalidCountBeforeReadingOrAllocating) {
+TEST(TriangleInputTest,
+     RejectsInvalidCountBeforeReadingOrAllocating) {
     for (const std::size_t count : {std::size_t{0}, std::size_t{1000000}}) {
         std::istringstream input{"untouched"};
         std::string error;
@@ -127,7 +130,8 @@ TEST(TriangleInputTest, RejectsInvalidCountBeforeReadingOrAllocating) {
     }
 }
 
-TEST(TriangleInputTest, RejectsIncompleteOrMalformedTriangleWithoutPartialResult) {
+TEST(TriangleInputTest,
+     RejectsIncompleteOrMalformedTriangleWithoutPartialResult) {
     for (const auto* tail : {"0 0 0  1 0 0  0 1", "0 0 0  1 word 0  0 1 0", "0 0 0  1 0 0  0 1 0tail"}) {
         SCOPED_TRACE(tail);
         std::istringstream input{std::string{"0 0 0  1 0 0  0 1 0\n"} + tail};
@@ -137,14 +141,16 @@ TEST(TriangleInputTest, RejectsIncompleteOrMalformedTriangleWithoutPartialResult
     }
 }
 
-TEST(TriangleInputTest, RejectsDegenerateTriangle) {
+TEST(TriangleInputTest,
+     RejectsDegenerateTriangle) {
     std::istringstream input{"0 0 0  1 1 1  2 2 2"};
     std::string error;
     EXPECT_FALSE(triangles::read_triangles(input, 1, &error));
     EXPECT_NE(error.find("collinear"), std::string::npos);
 }
 
-TEST(TriangleInputTest, RejectsCoordinatesUnsupportedByPredicates) {
+TEST(TriangleInputTest,
+     RejectsCoordinatesUnsupportedByPredicates) {
     for (const auto* coordinate : {"nan", "inf", "1e100", "1e-100", "1e-999"}) {
         SCOPED_TRACE(coordinate);
         std::istringstream input{std::string{coordinate} + " 0 0  1 0 0  0 1 0"};

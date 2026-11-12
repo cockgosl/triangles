@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <optional>
-#include <ranges>
 #include <stdexcept>
 
 namespace triangles {

@@ -29,17 +29,17 @@ bool Plane3::is_parallel(const Plane3& plane1,
     const Vector3 n1 = plane1.get_normal();
     const Vector3 n2 = plane2.get_normal();
 
-    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false; 
+    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false;
 
-    const auto xy = robust::orient2d({n1.x, n1.y}, 
-                                     {n2.x, n2.y}, 
+    const auto xy = robust::orient2d({n1.x, n1.y},
+                                     {n2.x, n2.y},
                                      {0.0 , 0.0 });
-    const auto xz = robust::orient2d({n1.x, n1.z}, 
-                                     {n2.x, n2.z}, 
+    const auto xz = robust::orient2d({n1.x, n1.z},
+                                     {n2.x, n2.z},
                                      {0.0 , 0.0 });
 
-    const auto yz = robust::orient2d({n1.y, n1.z}, 
-                                     {n2.y, n2.z}, 
+    const auto yz = robust::orient2d({n1.y, n1.z},
+                                     {n2.y, n2.z},
                                      {0.0 , 0.0 });
 
     return xy == robust::Sign::zero &&
@@ -52,22 +52,21 @@ bool Plane3::is_coincide(const Plane3& plane1,
     const Vector3 n1 = plane1.get_normal();
     const Vector3 n2 = plane2.get_normal();
 
-    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false; 
-
+    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false;
 
     const auto d1 = plane1.get_d();
     const auto d2 = plane2.get_d();
 
-    const auto ad = robust::orient2d({n1.x, d1}, 
-                                     {n2.x, d2}, 
+    const auto ad = robust::orient2d({n1.x, d1},
+                                     {n2.x, d2},
                                      {0.0, 0.0});
 
-    const auto bd = robust::orient2d({n1.y, d1}, 
-                                     {n2.y, d2}, 
+    const auto bd = robust::orient2d({n1.y, d1},
+                                     {n2.y, d2},
                                      {0.0, 0.0});
 
-    const auto cd = robust::orient2d({n1.z, d1}, 
-                                     {n2.z, d2}, 
+    const auto cd = robust::orient2d({n1.z, d1},
+                                     {n2.z, d2},
                                      {0.0, 0.0});
 
     return is_parallel(plane1, plane2) &&
@@ -106,7 +105,7 @@ std::optional<Plane3> Plane3::Create(const Vector3& point,
 
     if (!std::isfinite(plane.get_d()))
         return std::nullopt;
-    
+
     return plane;
 }
 
