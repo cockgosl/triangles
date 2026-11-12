@@ -28,9 +28,11 @@ std::optional<AABB> GetSceneBounds(const std::vector<SceneTriangle>& triangles) 
 
     Vector3 min = triangles.front().bounds.get_min();
     Vector3 max = triangles.front().bounds.get_max();
+
     for (const auto& triangle : triangles) {
         const auto& lower = triangle.bounds.get_min();
         const auto& upper = triangle.bounds.get_max();
+
         min = {std::min(min.x, lower.x), std::min(min.y, lower.y), std::min(min.z, lower.z)};
         max = {std::max(max.x, upper.x), std::max(max.y, upper.y), std::max(max.z, upper.z)};
     }
@@ -40,7 +42,9 @@ std::optional<AABB> GetSceneBounds(const std::vector<SceneTriangle>& triangles) 
 std::optional<AABB> GetOctotreeDomain(const AABB& bounds) {
     const Vector3 center = bounds.center();
     const Vector3 extent = bounds.extent();
+
     const double half_extent = std::max({extent.x, extent.y, extent.z}) * 0.5;
+
     const auto lower = [half_extent](double value, double min) {
         return std::nextafter(std::min(min, value - half_extent), -std::numeric_limits<double>::infinity());
     };
@@ -50,8 +54,38 @@ std::optional<AABB> GetOctotreeDomain(const AABB& bounds) {
 
     const auto& min = bounds.get_min();
     const auto& max = bounds.get_max();
+
     return AABB::Create({lower(center.x, min.x), lower(center.y, min.y), lower(center.z, min.z)},
                         {upper(center.x, max.x), upper(center.y, max.y), upper(center.z, max.z)});
+}
+
+std::optional<::graphics::ShadowConfig> GetShadowConfig(const AABB& bounds) {
+    ::graphics::ShadowConfig shadow_config;
+    const Vector3 center = bounds.center();
+
+    const double light_distance = std::max(bounds.extent().length(), 1.0);
+
+    const Vector3 light_direction{shadow_config.light_position.x,
+                                  shadow_config.light_position.y,
+                                  shadow_config.light_position.z};
+
+    const Vector3 light_position = center + light_direction.normalized() * light_distance;
+
+    const double light_magnitude = std::max({std::abs(light_position.x), 
+                                             std::abs(light_position.y), 
+                                             std::abs(light_position.z)});
+
+    if (light_magnitude > std::numeric_limits<float>::max()) return std::nullopt;
+
+    shadow_config.light_position = {static_cast<float>(light_position.x),
+                                    static_cast<float>(light_position.y),
+                                    static_cast<float>(light_position.z)};
+
+    shadow_config.light_target   = {static_cast<float>(center.x),
+                                    static_cast<float>(center.y), 
+                                    static_cast<float>(center.z)};
+
+    return shadow_config;
 }
 
 std::optional<std::vector<bool>> FindIntersectingTriangles(const std::vector<SceneTriangle>& triangles, const AABB& domain,
@@ -136,6 +170,7 @@ Application::Application(TriangleSource source)
 
 bool Application::Initialize() {
     if (source_ == TriangleSource::kGenerator) std::cout << "Enter number of triangles: " << std::flush;
+    else std::cout << "Enter number N of triangles and their coordinates: " << std::flush;
 
     std::string error;
     const auto triangle_count = read_triangle_count(std::cin, &error);
@@ -192,20 +227,11 @@ bool Application::Initialize() {
         return false;
     }
 
-    ::graphics::ShadowConfig shadow_config;
-    const Vector3 center = bounds->center();
-    const double light_distance = std::max(bounds->extent().length(), 1.0);
-    const Vector3 light_direction{shadow_config.light_position.x, shadow_config.light_position.y,
-                                 shadow_config.light_position.z};
-    const Vector3 light_position = center + light_direction.normalized() * light_distance;
-    const double light_magnitude = std::max({std::abs(light_position.x), std::abs(light_position.y), std::abs(light_position.z)});
-    if (light_magnitude > std::numeric_limits<float>::max()) {
+    const auto shadow_config = GetShadowConfig(*bounds);
+    if (!shadow_config) {
         std::cerr << "Scene bounds exceed the lighting coordinate range.\n";
         return false;
     }
-    shadow_config.light_position = {static_cast<float>(light_position.x), static_cast<float>(light_position.y),
-                                    static_cast<float>(light_position.z)};
-    shadow_config.light_target = {static_cast<float>(center.x), static_cast<float>(center.y), static_cast<float>(center.z)};
 
     auto window = ::graphics::Window::Create(800, 600, "Triangles");
     if (!window) {
@@ -216,7 +242,7 @@ bool Application::Initialize() {
     window_.emplace(std::move(*window));
     window_->SetCursorCaptured(true);
 
-    if (!renderer_.Initialize(vertices, shadow_config)) {
+    if (!renderer_.Initialize(vertices, *shadow_config)) {
         std::cerr << "Failed to initialize renderer.\n";
         return false;
     }
