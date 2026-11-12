@@ -164,8 +164,8 @@ std::vector<float> ConvertTrianglesToVertices(const std::vector<SceneTriangle>& 
 
 } // namespace
 
-Application::Application(TriangleSource source)
-    : source_(source),
+Application::Application(TriangleSource source, bool console)
+    : source_(source), console_(console),
       camera_(glm::vec3{0.0f, 0.0f, 3.0f}, 800.0f / 600.0f, ::graphics::CameraConfig{}) {}
 
 
@@ -230,6 +230,9 @@ bool Application::Initialize() {
     }
     std::cout << std::flush;
 
+    if (console_)
+        return true;
+
     auto vertices = ConvertTrianglesToVertices(*triangles, *intersection_results);
     if (vertices.empty()) {
         std::cerr << "Failed to create scene vertices: coordinates must fit in float.\n";
@@ -292,6 +295,9 @@ void Application::ProcessInput(float delta_time) {
 int Application::Run() {
     if (!Initialize())
         return EXIT_FAILURE;
+
+    if (console_)
+        return EXIT_SUCCESS;
 
     auto last_frame_time = std::chrono::steady_clock::now();
 

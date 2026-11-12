@@ -7,13 +7,10 @@ import pathlib
 import random
 import subprocess
 import sys
-import tempfile
-import time
 import unittest
 
 BINARY = None
-OBSERVE_SECONDS = 1.0
-ERROR_TIMEOUT = 5.0
+TIMEOUT = 10.0
 
 
 def tri(a, b, c):
@@ -63,41 +60,22 @@ def many_scene():
 
 
 class E2E(unittest.TestCase):
-    def assert_scene(self, scene, expected, args=()):
-        # Files avoid pipe backpressure; stdin is closed after the complete input.
-        # There is no end-of-output marker, so the bounded observation interval is
-        # a practical smoke test, not proof that an empty answer is final.
-        with tempfile.TemporaryFile() as inp, tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
-            inp.write(scene_input(scene).encode('ascii'))
-            inp.seek(0)
-            p = subprocess.Popen([BINARY, *args], stdin=inp, stdout=out, stderr=err)
-            try:
-                deadline = time.monotonic() + OBSERVE_SECONDS
-                while time.monotonic() < deadline and p.poll() is None:
-                    time.sleep(min(0.02, max(0, deadline-time.monotonic())))
-                status = p.poll()
-            finally:
-                if p.poll() is None:
-                    p.terminate()
-                    try:
-                        p.wait(timeout=2)
-                    except subprocess.TimeoutExpired:
-                        p.kill()
-                        p.wait(timeout=2)
-            out.seek(0)
-            err.seek(0)
-            actual = out.read().decode('utf-8', errors='replace')
-            errors = err.read().decode('utf-8', errors='replace')
-            self.assertIsNone(status, f'process exited before observation ended: {status}; stdout={actual!r}; stderr={errors!r}')
-            self.assertEqual(actual, ''.join(f'{i}\n' for i in expected), f'stdout mismatch; stderr={errors!r}')
+    def assert_scene(self, scene, expected):
+        try:
+            result = subprocess.run(
+                [BINARY, '--console'], input=scene_input(scene), text=True,
+                capture_output=True, timeout=TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            self.fail(f'process did not exit within {TIMEOUT}s')
+        self.assertEqual(result.returncode, 0, f'stderr={result.stderr!r}')
+        self.assertEqual(result.stdout, ''.join(f'{i}\n' for i in expected),
+                         f'stderr={result.stderr!r}')
 
     def test_named_scenes(self):
         for name, scene, expected in CASES:
             with self.subTest(name=name):
                 self.assert_scene(scene, expected)
-
-    def test_explicit_input_option(self):
-        self.assert_scene([BASE, BASE], [0, 1], args=('--input',))
 
     def test_vertex_and_triangle_order(self):
         other = tri((1, 1, -1), (1, 1, 1), (3, 1, 0))
@@ -134,15 +112,15 @@ class E2E(unittest.TestCase):
         for name, data, message in invalid:
             with self.subTest(name=name):
                 try:
-                    p = subprocess.run([BINARY, '--input'], input=data, text=True, capture_output=True, timeout=ERROR_TIMEOUT)
+                    p = subprocess.run([BINARY, '--console'], input=data, text=True, capture_output=True, timeout=TIMEOUT)
                 except subprocess.TimeoutExpired:
-                    self.fail(f'{name}: did not exit within {ERROR_TIMEOUT}s')
+                    self.fail(f'{name}: did not exit within {TIMEOUT}s')
                 self.assertEqual(p.returncode, 1, f'{name}: stdout={p.stdout!r}, stderr={p.stderr!r}')
                 self.assertEqual(p.stdout, '')
                 self.assertIn(message, p.stderr)
 
     def test_invalid_argument(self):
-        p = subprocess.run([BINARY, '--unknown'], input='', text=True, capture_output=True, timeout=ERROR_TIMEOUT)
+        p = subprocess.run([BINARY, '--unknown'], input='', text=True, capture_output=True, timeout=TIMEOUT)
         self.assertEqual(p.returncode, 1)
         self.assertEqual(p.stdout, '')
         self.assertIn('Usage:', p.stderr)
@@ -151,12 +129,8 @@ class E2E(unittest.TestCase):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', type=pathlib.Path)
-    parser.add_argument('--observe', type=float, default=1.0, help='seconds to observe each valid process (default: 1)')
     args, unittest_args = parser.parse_known_args()
     if not args.binary.is_file() or not os.access(args.binary, os.X_OK):
         parser.error('binary must be an executable file')
-    if args.observe <= 0:
-        parser.error('--observe must be positive')
     BINARY = str(args.binary.resolve())
-    OBSERVE_SECONDS = args.observe
     unittest.main(argv=[sys.argv[0], *unittest_args], verbosity=2)

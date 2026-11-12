@@ -58,7 +58,7 @@ foreach(SHADER triangle.vert.glsl triangle.frag.glsl depth.vert.glsl depth.frag.
     )
 endforeach()
 
-option(BUILD_APP "Build the application" OFF)
+option(BUILD_APP "Build the application" ON)
 
 if(BUILD_APP)
     add_executable(

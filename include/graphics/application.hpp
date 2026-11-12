@@ -21,12 +21,13 @@ private:
     void ProcessInput(float delta_time);
 
     TriangleSource source_;
+    bool console_;
     std::optional<::graphics::Window> window_;
     ::graphics::Camera camera_;
     ::graphics::TriangleRenderer renderer_;
 
 public:
-    explicit Application(TriangleSource source = TriangleSource::kInput);
+    explicit Application(TriangleSource source = TriangleSource::kInput, bool console = false);
     ~Application() noexcept = default;
 
     Application(const Application&) = delete;

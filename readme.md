@@ -1,7 +1,7 @@
 # Triangles
 
-A C++ application for exploring triangle intersections in 3D. Choose how many
-triangles to generate, then fly through the scene using mouse and keyboard
+A C++ application for exploring triangle intersections in 3D. Read a scene from
+standard input or generate one, then fly through it using mouse and keyboard
 controls. Colors distinguish intersecting triangles from the rest of the scene.
 
 ## Preview
@@ -14,6 +14,7 @@ controls. Colors distinguish intersecting triangles from the rest of the scene.
 
 ## Features
 
+- Read triangle coordinates from standard input and print the intersecting indices.
 - Generate a chosen number of triangles with random positions and orientations.
 - Identify triangle intersections using an octree to narrow down candidate pairs.
 - Explore a static scene with a freely moving camera.
@@ -28,14 +29,37 @@ controls. Colors distinguish intersecting triangles from the rest of the scene.
 
 The color applies to the entire triangle, rather than just the intersection area.
 
+## Building
+
+You need CMake, a C++20 compiler, Git to fetch dependencies, and Python 3 for the
+end-to-end tests. Run these commands from the repository root:
+
+```sh
+cmake -S . -B build
+cmake --build build
+```
+
+The application and tests are enabled by default. If an existing build was
+configured with `BUILD_APP=OFF`, use a fresh build directory or reconfigure with
+`-DBUILD_APP=ON`.
+
 ## Using the application
 
-1. Launch the application.
-2. Enter a positive integer when prompted for the number of triangles.
-3. Explore the generated scene using the controls below.
+```sh
+./build/triangles.out < scene.txt
+./build/triangles.out --console < scene.txt
+./build/triangles.out --generate
+```
 
-The triangle count is entered at startup. Generator, octree, and camera settings
-are currently configured in the source code.
+The input starts with a triangle count (`0 < N < 1,000,000`), followed by nine
+coordinates per triangle (`ax ay az bx by bz cx cy cz`). The default mode prints
+the result and opens the scene. With `--console`, the program prints the result
+and exits. Each intersecting triangle's index is printed once, in ascending
+order, starting from zero, one per line. A successful run with no intersections
+produces no output.
+
+In `--generate` mode, enter the number of triangles when prompted. Generator,
+octree, and camera settings are currently configured in the source code.
 
 | Input | Action |
 | --- | --- |
@@ -45,6 +69,17 @@ are currently configured in the source code.
 | `Esc` | Close the application |
 
 The mouse cursor is captured while the application is running.
+
+## Testing
+
+```sh
+(cd build && ctest --output-on-failure)
+```
+
+CTest runs the GoogleTest suite and the Python end-to-end tests. The end-to-end
+tests use `--console`, so they can run without a display. See the
+[manual graphics check](tests/e2e/README.md#manual-graphics-check) to verify the
+window, highlighting, and controls.
 
 ## limitations
 

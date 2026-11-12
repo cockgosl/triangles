@@ -20,3 +20,12 @@ foreach(object IN ITEMS octotree vector3 triangle generator plane3 line3 point2 
     target_compile_options(${object}_tests PRIVATE -Wall -Wextra -Wpedantic)
     gtest_discover_tests(${object}_tests PROPERTIES TIMEOUT 10 LABELS "${object}")
 endforeach()
+
+if(TARGET triangles.out)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_test(
+        NAME triangles_e2e
+        COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/e2e/test_e2e.py" "$<TARGET_FILE:triangles.out>"
+    )
+    set_tests_properties(triangles_e2e PROPERTIES TIMEOUT 60 LABELS "e2e")
+endif()
