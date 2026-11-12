@@ -172,8 +172,6 @@ Application::Application(TriangleSource source)
 bool Application::Initialize() {
     if (source_ == TriangleSource::kGenerator)
         std::cout << "Enter number of triangles: " << std::flush;
-    else
-        std::cout << "Enter number N of triangles and their coordinates: " << std::flush;
 
     std::string error;
     const auto triangle_count = read_triangle_count(std::cin, &error);
@@ -225,6 +223,12 @@ bool Application::Initialize() {
     auto intersection_results = FindIntersectingTriangles(*triangles, *domain, config);
     if (!intersection_results)
         return false;
+
+    for (std::size_t i = 0; i < intersection_results->size(); ++i) {
+        if ((*intersection_results)[i])
+            std::cout << i << '\n';
+    }
+    std::cout << std::flush;
 
     auto vertices = ConvertTrianglesToVertices(*triangles, *intersection_results);
     if (vertices.empty()) {

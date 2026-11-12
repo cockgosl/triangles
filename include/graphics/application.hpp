@@ -26,7 +26,7 @@ private:
     ::graphics::TriangleRenderer renderer_;
 
 public:
-    explicit Application(TriangleSource source = TriangleSource::kGenerator);
+    explicit Application(TriangleSource source = TriangleSource::kInput);
     ~Application() noexcept = default;
 
     Application(const Application&) = delete;
