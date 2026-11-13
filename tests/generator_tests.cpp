@@ -12,18 +12,23 @@ using triangles::Vector3;
 namespace {
 
 AABB MakeDomain() {
-    const auto domain = AABB::Create(Vector3{-5.0, -5.0, -5.0}, Vector3{5.0, 5.0, 5.0});
+    const auto domain = AABB::Create(
+        Vector3{-5.0, -5.0, -5.0},
+        Vector3{5.0, 5.0, 5.0}
+    );
 
     return *domain;
 }
 
 GeneratorConfig MakeConfig() {
-    return GeneratorConfig{.domain = MakeDomain(),
-                           .target_max_edge_length = 1.0,
-                           .relative_size_variation = 0.1,
-                           .min_shape_quality = 0.1,
-                           .seed = 42u,
-                           .max_shape_attempts = 1000};
+    return GeneratorConfig{
+        .domain = MakeDomain(),
+        .target_max_edge_length = 1.0,
+        .relative_size_variation = 0.1,
+        .min_shape_quality = 0.1,
+        .seed = 42u,
+        .max_shape_attempts = 1000
+    };
 }
 
 } // namespace
@@ -71,7 +76,10 @@ TEST(GeneratorTests,
      RejectsDomainTooSmall) {
     auto config = MakeConfig();
 
-    const auto domain = AABB::Create(Vector3{0.0, 0.0, 0.0}, Vector3{0.1, 0.1, 0.1});
+    const auto domain = AABB::Create(
+        Vector3{0.0, 0.0, 0.0},
+        Vector3{0.1, 0.1, 0.1}
+    );
 
     ASSERT_TRUE(domain.has_value());
     config.domain = *domain;

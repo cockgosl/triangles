@@ -29,7 +29,8 @@ bool Plane3::is_parallel(const Plane3& plane1,
     const Vector3 n1 = plane1.get_normal();
     const Vector3 n2 = plane2.get_normal();
 
-    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false;
+    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2)))
+        return false;
 
     const auto xy = robust::orient2d({n1.x, n1.y},
                                      {n2.x, n2.y},
@@ -52,7 +53,8 @@ bool Plane3::is_coincide(const Plane3& plane1,
     const Vector3 n1 = plane1.get_normal();
     const Vector3 n2 = plane2.get_normal();
 
-    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2))) return false;
+    if (!(Vector3::valid_vec(n1) && Vector3::valid_vec(n2)))
+        return false;
 
     const auto d1 = plane1.get_d();
     const auto d2 = plane2.get_d();

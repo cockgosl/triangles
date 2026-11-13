@@ -118,14 +118,20 @@ TEST(TriangleIntersectionTest,
 TEST(TriangleIntersectionTest,
      ArgumentOrderAndVertexOrderPreserveResult) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
-    const std::array<Triangle3, 2> seconds{Triangle3(Vector3(-2, 0, -1), Vector3(2, 0, -1), Vector3(0, 0, 1)),
-                                           Triangle3(Vector3(0.5, 0, -1), Vector3(4.5, 0, -1), Vector3(2.5, 0, 1))};
+    const std::array<Triangle3, 2> seconds{
+        Triangle3(Vector3(-2, 0, -1), Vector3(2, 0, -1), Vector3(0, 0, 1)),
+        Triangle3(Vector3(0.5, 0, -1), Vector3(4.5, 0, -1), Vector3(2.5, 0, 1))
+    };
 
     const auto permutations = [](const Triangle3& triangle) {
         return std::array<Triangle3, 6>{
-            Triangle3(triangle.a, triangle.b, triangle.c), Triangle3(triangle.b, triangle.c, triangle.a),
-            Triangle3(triangle.c, triangle.a, triangle.b), Triangle3(triangle.a, triangle.c, triangle.b),
-            Triangle3(triangle.c, triangle.b, triangle.a), Triangle3(triangle.b, triangle.a, triangle.c)};
+            Triangle3(triangle.a, triangle.b, triangle.c),
+            Triangle3(triangle.b, triangle.c, triangle.a),
+            Triangle3(triangle.c, triangle.a, triangle.b),
+            Triangle3(triangle.a, triangle.c, triangle.b),
+            Triangle3(triangle.c, triangle.b, triangle.a),
+            Triangle3(triangle.b, triangle.a, triangle.c)
+        };
     };
 
     for (std::size_t case_index = 0; case_index < seconds.size(); ++case_index) {

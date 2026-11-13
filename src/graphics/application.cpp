@@ -65,11 +65,8 @@ std::optional<::graphics::ShadowConfig> GetShadowConfig(const AABB& bounds) {
     const Vector3 center = bounds.center();
 
     const double light_distance = std::max(bounds.extent().length(), 1.0);
-
     const Vector3 light_direction{shadow_config.light_position.x, shadow_config.light_position.y, shadow_config.light_position.z};
-
     const Vector3 light_position = center + light_direction.normalized() * light_distance;
-
     const double light_magnitude = std::max({std::abs(light_position.x), std::abs(light_position.y), std::abs(light_position.z)});
 
     if (light_magnitude > std::numeric_limits<float>::max())
@@ -164,6 +161,7 @@ std::vector<float> ConvertTrianglesToVertices(const std::vector<SceneTriangle>& 
 
 } // namespace
 
+// clang-format
 Application::Application(TriangleSource source, bool console)
     : source_(source), console_(console),
       camera_(glm::vec3{0.0f, 0.0f, 3.0f}, 800.0f / 600.0f, ::graphics::CameraConfig{}) {}
@@ -261,6 +259,7 @@ bool Application::Initialize() {
 
     return true;
 }
+// clang-format on
 
 void Application::RenderFrame() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -305,11 +304,9 @@ int Application::Run() {
         window_->PollEvents();
 
         const auto current_frame_time = std::chrono::steady_clock::now();
-
         const float delta_time = std::chrono::duration<float>(current_frame_time - last_frame_time).count();
 
         last_frame_time = current_frame_time;
-
         ProcessInput(delta_time);
 
         if (!window_->ShouldClose())

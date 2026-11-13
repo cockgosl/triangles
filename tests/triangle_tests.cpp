@@ -87,6 +87,7 @@ TEST(TriangleInputTest,
         std::istringstream input{token};
         std::string error = "previous error";
         const auto count = triangles::read_triangle_count(input, &error);
+
         ASSERT_TRUE(count);
         EXPECT_EQ(*count, std::stoull(token));
         EXPECT_TRUE(error.empty());
@@ -96,6 +97,7 @@ TEST(TriangleInputTest,
         SCOPED_TRACE(token);
         std::istringstream input{token};
         std::string error;
+        
         EXPECT_FALSE(triangles::read_triangle_count(input, &error));
         EXPECT_FALSE(error.empty());
     }

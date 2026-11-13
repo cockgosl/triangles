@@ -17,13 +17,15 @@ namespace {
 
 bool read_coordinate(std::istream& input, double& coordinate) {
     std::string token;
-    if (!(input >> token)) return false;
+    if (!(input >> token))
+        return false;
 
     const char* begin = token.data();
     const char* end = begin + token.size();
     if (*begin == '+') {
         ++begin;
-        if (begin == end || *begin == '+' || *begin == '-') return false;
+        if (begin == end || *begin == '+' || *begin == '-')
+            return false;
     }
     const auto [parsed_end, status] = std::from_chars(begin, end, coordinate);
     return status == std::errc{} && parsed_end == end;
@@ -80,9 +82,9 @@ Vector3 Triangle3::normal() const {
 std::optional<AABB> Triangle3::bounds() const {
     const std::array vertices{a, b, c};
 
-    for (const auto& vertex : vertices) {
-        if (!Vector3::isfinite_vec(vertex)) return std::nullopt;
-    }
+    for (const auto& vertex : vertices)
+        if (!Vector3::isfinite_vec(vertex))
+            return std::nullopt;
 
     const Vector3 min{
         std::min({a.x, b.x, c.x}),
@@ -102,27 +104,31 @@ std::optional<AABB> Triangle3::bounds() const {
 
 std::optional<std::size_t> read_triangle_count(std::istream& input,
                                                std::string* error) {
-    if (error) error->clear();
+    if (error)
+        error->clear();
 
     std::string token;
     std::size_t count = 0;
     if (input >> token) {
         const auto [end, status] = std::from_chars(token.data(), token.data() + token.size(), count);
-        if (status == std::errc{} && end == token.data() + token.size() && count > 0 && count <= max_triangle_count) return count;
+        if (status == std::errc{} && end == token.data() + token.size() && count > 0 && count <= max_triangle_count)
+            return count;
     }
 
-    if (error) *error = "Expected an integer N with 0 < N < 1000000.";
+    if (error)
+        *error = "Expected an integer N with 0 < N < 1000000.";
     return std::nullopt;
 }
 
 std::optional<std::vector<SceneTriangle>> read_triangles(std::istream& input,
                                                          std::size_t count,
                                                          std::string* error) {
-    if (error) error->clear();
+    if (error)
+        error->clear();
 
     const auto fail = [error](const std::string& message) -> std::optional<std::vector<SceneTriangle>> {
         if (error) *error = message;
-        return std::nullopt;
+            return std::nullopt;
     };
 
     if (count == 0 || count > max_triangle_count)
