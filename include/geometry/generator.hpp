@@ -25,11 +25,6 @@ struct GeneratorConfig {
     std::size_t max_shape_attempts{1000};
 };
 
-struct GeneratedTriangle {
-    Triangle3 triangle;
-    AABB bounds;
-};
-
 class Generator {
 private:
     AABB domain_;
@@ -55,8 +50,8 @@ public:
     static std::optional<Generator> Create(const GeneratorConfig& config,
                                            std::string* error = nullptr);
 
-    std::optional<GeneratedTriangle> generate_triangle();
-    std::optional<std::vector<GeneratedTriangle>> generate_triangles(std::size_t count);
+    std::optional<SceneTriangle> generate_triangle();
+    std::optional<std::vector<SceneTriangle>> generate_triangles(std::size_t count);
 };
 
 } // namespace triangles

@@ -12,7 +12,8 @@ using triangles::Vector3;
 
 constexpr double EPSILON = std::numeric_limits<double>::epsilon();
 
-TEST(Line3Test, NormalizesDirectionAndPreservesSupportPoint) {
+TEST(Line3Test,
+     NormalizesDirectionAndPreservesSupportPoint) {
     const Vector3 point(1.0, 2.0, 3.0);
     const auto line = Line3::Create(Vector3(3.0, 4.0, 0.0), point);
     const auto through_origin = Line3::Create(Vector3(3.0, 4.0, 0.0));
@@ -25,18 +26,18 @@ TEST(Line3Test, NormalizesDirectionAndPreservesSupportPoint) {
     EXPECT_TRUE(through_origin->get_direction() == line->get_direction());
 }
 
-TEST(Line3Test, RejectsInvalidDirectionOrSupportPoint) {
+TEST(Line3Test,
+     RejectsInvalidDirectionOrSupportPoint) {
     EXPECT_FALSE(Line3::Create(Vector3{}).has_value());
 
-    for (const double invalid : {std::numeric_limits<double>::quiet_NaN(),
-                                  std::numeric_limits<double>::infinity()}) {
+    for (const double invalid : {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity()}) {
         EXPECT_FALSE(Line3::Create(Vector3(invalid, 0.0, 1.0)).has_value());
-        EXPECT_FALSE(Line3::Create(Vector3(1.0, 0.0, 0.0),
-                                  Vector3(0.0, invalid, 0.0)).has_value());
+        EXPECT_FALSE(Line3::Create(Vector3(1.0, 0.0, 0.0), Vector3(0.0, invalid, 0.0)).has_value());
     }
 }
 
-TEST(Line3Test, EqualityRecognizesSameGeometricLine) {
+TEST(Line3Test,
+     EqualityRecognizesSameGeometricLine) {
     const auto first = Line3::Create(Vector3(2.0, 0.0, 0.0), Vector3(1.0, 2.0, 3.0));
     const auto same = Line3::Create(Vector3(-4.0, 0.0, 0.0), Vector3(5.0, 2.0, 3.0));
     const auto offset = Line3::Create(Vector3(1.0, 0.0, 0.0), Vector3(1.0, 3.0, 3.0));
@@ -51,7 +52,8 @@ TEST(Line3Test, EqualityRecognizesSameGeometricLine) {
     EXPECT_FALSE(*first == *crossing);
 }
 
-TEST(Line3Test, PlaneFactoryHandlesCrossingParallelAndCoincidentPlanes) {
+TEST(Line3Test,
+     PlaneFactoryHandlesCrossingParallelAndCoincidentPlanes) {
     const auto first = Plane3::Create(Vector3(2.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0));
     const auto crossing = Plane3::Create(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, 1.0));
     const auto parallel = Plane3::Create(Vector3(3.0, 0.0, 0.0), Vector3(1.0, 0.0, 0.0));

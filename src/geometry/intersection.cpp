@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <optional>
-#include <ranges>
 #include <stdexcept>
 
 namespace triangles {
@@ -160,8 +159,8 @@ bool triangles_intersect(const TriangleCoordinates& first,
 
 std::optional<Line3> intersection(const Plane3& plane1,
                                   const Plane3& plane2) {
-    const Vector3 normal_1 = plane1.get_normal().normalized();
-    const Vector3 normal_2 = plane2.get_normal().normalized();
+    const Vector3 normal_1 = plane1.get_normal();
+    const Vector3 normal_2 = plane2.get_normal();
     const Vector3 direction = normal_1.cross(normal_2);
 
     if (!Vector3::valid_vec(direction))
@@ -172,7 +171,7 @@ std::optional<Line3> intersection(const Plane3& plane1,
     const double denominator = 1.0 / direction.dot(direction);
     const Vector3 supp_point = numerator * denominator;
 
-    return Line3::Create(direction.normalized(), supp_point);
+    return Line3::Create(direction, supp_point);
 }
 
 // TODO - try/catch logic

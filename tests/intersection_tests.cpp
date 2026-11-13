@@ -8,7 +8,8 @@
 using triangles::Triangle3;
 using triangles::Vector3;
 
-TEST(TriangleIntersectionTest, NonCoplanarCutsOverlap) {
+TEST(TriangleIntersectionTest,
+     NonCoplanarCutsOverlap) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(-2, 0, -1), Vector3(2, 0, -1), Vector3(0, 0, 1));
 
@@ -18,7 +19,8 @@ TEST(TriangleIntersectionTest, NonCoplanarCutsOverlap) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, BothStraddleButCutsAreDisjoint) {
+TEST(TriangleIntersectionTest,
+     BothStraddleButCutsAreDisjoint) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(0.5, 0, -1), Vector3(4.5, 0, -1), Vector3(2.5, 0, 1));
 
@@ -28,10 +30,10 @@ TEST(TriangleIntersectionTest, BothStraddleButCutsAreDisjoint) {
     EXPECT_FALSE(result.value());
 }
 
-TEST(TriangleIntersectionTest, ObliqueTranslatedPlanesPreserveIntersection) {
+TEST(TriangleIntersectionTest,
+     ObliqueTranslatedPlanesPreserveIntersection) {
     const auto transform = [](const Vector3& point) {
-        return Vector3(point.x + point.y + 2 * point.z + 3,
-                       2 * point.x - point.y + point.z - 2,
+        return Vector3(point.x + point.y + 2 * point.z + 3, 2 * point.x - point.y + point.z - 2,
                        point.x + 2 * point.y - point.z + 5);
     };
     const auto transform_triangle = [&](const Triangle3& triangle) {
@@ -50,7 +52,8 @@ TEST(TriangleIntersectionTest, ObliqueTranslatedPlanesPreserveIntersection) {
     EXPECT_FALSE(disjoint.value());
 }
 
-TEST(TriangleIntersectionTest, DistinctParallelPlanesDoNotIntersect) {
+TEST(TriangleIntersectionTest,
+     DistinctParallelPlanesDoNotIntersect) {
     const Triangle3 first(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
     const Triangle3 second(Vector3(0, 0, 1), Vector3(2, 0, 1), Vector3(0, 2, 1));
 
@@ -59,7 +62,8 @@ TEST(TriangleIntersectionTest, DistinctParallelPlanesDoNotIntersect) {
     EXPECT_FALSE(result.value());
 }
 
-TEST(TriangleIntersectionTest, NonCoplanarCutsTouchAtEndpoint) {
+TEST(TriangleIntersectionTest,
+     NonCoplanarCutsTouchAtEndpoint) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(0, 0, -1), Vector3(4, 0, -1), Vector3(2, 0, 1));
 
@@ -69,7 +73,8 @@ TEST(TriangleIntersectionTest, NonCoplanarCutsTouchAtEndpoint) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, VertexTouchesInteriorOfOtherTriangle) {
+TEST(TriangleIntersectionTest,
+     VertexTouchesInteriorOfOtherTriangle) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(0, 0, 0), Vector3(0, -1, 1), Vector3(0, 1, 1));
 
@@ -78,7 +83,8 @@ TEST(TriangleIntersectionTest, VertexTouchesInteriorOfOtherTriangle) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, VertexOnOtherPlaneCanMissOtherTriangle) {
+TEST(TriangleIntersectionTest,
+     VertexOnOtherPlaneCanMissOtherTriangle) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(0, 2, 0), Vector3(0, 0.5, 1), Vector3(0, 3, 1));
 
@@ -88,7 +94,8 @@ TEST(TriangleIntersectionTest, VertexOnOtherPlaneCanMissOtherTriangle) {
     EXPECT_FALSE(result.value());
 }
 
-TEST(TriangleIntersectionTest, EdgeOnOtherPlaneOverlapsOtherTriangle) {
+TEST(TriangleIntersectionTest,
+     EdgeOnOtherPlaneOverlapsOtherTriangle) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(-0.5, 0, 0), Vector3(0.5, 0, 0), Vector3(0, 0, 1));
 
@@ -97,7 +104,8 @@ TEST(TriangleIntersectionTest, EdgeOnOtherPlaneOverlapsOtherTriangle) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, EdgeOnOtherPlaneCanMissOtherTriangle) {
+TEST(TriangleIntersectionTest,
+     EdgeOnOtherPlaneCanMissOtherTriangle) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const Triangle3 second(Vector3(1.5, 0, 0), Vector3(2, 0, 0), Vector3(0, 0, 1));
 
@@ -107,7 +115,8 @@ TEST(TriangleIntersectionTest, EdgeOnOtherPlaneCanMissOtherTriangle) {
     EXPECT_FALSE(result.value());
 }
 
-TEST(TriangleIntersectionTest, ArgumentOrderAndVertexOrderPreserveResult) {
+TEST(TriangleIntersectionTest,
+     ArgumentOrderAndVertexOrderPreserveResult) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 1, 0));
     const std::array<Triangle3, 2> seconds{
         Triangle3(Vector3(-2, 0, -1), Vector3(2, 0, -1), Vector3(0, 0, 1)),
@@ -142,7 +151,8 @@ TEST(TriangleIntersectionTest, ArgumentOrderAndVertexOrderPreserveResult) {
     }
 }
 
-TEST(TriangleIntersectionTest, CoplanarTriangleContainedInOtherTriangle) {
+TEST(TriangleIntersectionTest,
+     CoplanarTriangleContainedInOtherTriangle) {
     const Triangle3 outer(Vector3(0, 0, 0), Vector3(6, 0, 0), Vector3(0, 6, 0));
     const Triangle3 inner(Vector3(1, 1, 0), Vector3(2, 1, 0), Vector3(1, 2, 0));
 
@@ -151,7 +161,8 @@ TEST(TriangleIntersectionTest, CoplanarTriangleContainedInOtherTriangle) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, CoplanarEdgesCrossWithoutContainedVertices) {
+TEST(TriangleIntersectionTest,
+     CoplanarEdgesCrossWithoutContainedVertices) {
     const Triangle3 first(Vector3(-2, -1, 0), Vector3(2, -1, 0), Vector3(0, 2, 0));
     const Triangle3 second(Vector3(-2, 1, 0), Vector3(2, 1, 0), Vector3(0, -2, 0));
 
@@ -160,10 +171,10 @@ TEST(TriangleIntersectionTest, CoplanarEdgesCrossWithoutContainedVertices) {
     EXPECT_TRUE(result.value());
 }
 
-TEST(TriangleIntersectionTest, VerticalCoplanarTrianglesNeedYZProjection) {
+TEST(TriangleIntersectionTest,
+     VerticalCoplanarTrianglesNeedYZProjection) {
     const Triangle3 first(Vector3(0, 0, 0), Vector3(0, 2, 0), Vector3(0, 0, 2));
-    const Triangle3 second(Vector3(0, 1.5, 1.5), Vector3(0, 3.5, 1.5),
-                           Vector3(0, 1.5, 3.5));
+    const Triangle3 second(Vector3(0, 1.5, 1.5), Vector3(0, 3.5, 1.5), Vector3(0, 1.5, 3.5));
 
     // The y/z bounds overlap, but the triangles lie on opposite sides of
     // y+z=2.5.
@@ -172,25 +183,26 @@ TEST(TriangleIntersectionTest, VerticalCoplanarTrianglesNeedYZProjection) {
     EXPECT_FALSE(result.value());
 }
 
-TEST(TriangleIntersectionTest, RejectsNaNCoordinateInEitherArgument) {
+TEST(TriangleIntersectionTest,
+     RejectsNaNCoordinateInEitherArgument) {
     const Triangle3 valid(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
-    const Triangle3 invalid(Vector3(std::numeric_limits<double>::quiet_NaN(), 0, 0),
-                            Vector3(2, 0, 0), Vector3(0, 2, 0));
+    const Triangle3 invalid(Vector3(std::numeric_limits<double>::quiet_NaN(), 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
 
     EXPECT_FALSE(triangles::intersection(invalid, valid).has_value());
     EXPECT_FALSE(triangles::intersection(valid, invalid).has_value());
 }
 
-TEST(TriangleIntersectionTest, RejectsInfiniteCoordinateInEitherArgument) {
+TEST(TriangleIntersectionTest,
+     RejectsInfiniteCoordinateInEitherArgument) {
     const Triangle3 valid(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
-    const Triangle3 invalid(Vector3(0, 0, 0), Vector3(2, 0, 0),
-                            Vector3(0, 2, std::numeric_limits<double>::infinity()));
+    const Triangle3 invalid(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, std::numeric_limits<double>::infinity()));
 
     EXPECT_FALSE(triangles::intersection(invalid, valid).has_value());
     EXPECT_FALSE(triangles::intersection(valid, invalid).has_value());
 }
 
-TEST(TriangleIntersectionTest, RejectsDegenerateTriangleInEitherArgument) {
+TEST(TriangleIntersectionTest,
+     RejectsDegenerateTriangleInEitherArgument) {
     const Triangle3 valid(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
     const Triangle3 invalid(Vector3(0, 0, 0), Vector3(1, 1, 1), Vector3(2, 2, 2));
 
@@ -198,22 +210,21 @@ TEST(TriangleIntersectionTest, RejectsDegenerateTriangleInEitherArgument) {
     EXPECT_FALSE(triangles::intersection(valid, invalid).has_value());
 }
 
-TEST(TriangleIntersectionTest, RejectsCoordinatesOutsidePredicateRange) {
+TEST(TriangleIntersectionTest,
+     RejectsCoordinatesOutsidePredicateRange) {
     const double large = 0x1p251;
     const Triangle3 first(Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0));
-    const Triangle3 second(Vector3(large, 0, 0), Vector3(large, 1, 0),
-                           Vector3(large, 0, 1));
+    const Triangle3 second(Vector3(large, 0, 0), Vector3(large, 1, 0), Vector3(large, 0, 1));
 
     EXPECT_FALSE(triangles::intersection(first, second).has_value());
     EXPECT_FALSE(triangles::intersection(second, first).has_value());
 }
 
-TEST(TriangleIntersectionTest, CoplanarGapSurvivesProductCancellation) {
+TEST(TriangleIntersectionTest,
+     CoplanarGapSurvivesProductCancellation) {
     const double tail = 0x1p-27;
-    const Triangle3 first(Vector3(0, 0, 0), Vector3(1 + tail, 1, 0),
-                          Vector3(0, 2, 0));
-    const Triangle3 second(Vector3(1, 1 - tail, 0), Vector3(1, 0, 0),
-                           Vector3(0.5, 0, 0));
+    const Triangle3 first(Vector3(0, 0, 0), Vector3(1 + tail, 1, 0), Vector3(0, 2, 0));
+    const Triangle3 second(Vector3(1, 1 - tail, 0), Vector3(1, 0, 0), Vector3(0.5, 0, 0));
 
     const auto result = triangles::intersection(first, second);
     ASSERT_TRUE(result.has_value());
@@ -224,8 +235,7 @@ TEST(TriangleIntersectionTest,
      NearlyParallelPlanesDoNotCreateFalseIntersection) {
     const double height = 0x1p-60;
     const Triangle3 first(Vector3(0, 0, 0), Vector3(2, 0, 0), Vector3(0, 2, 0));
-    const Triangle3 second(Vector3(1, 0.25, height), Vector3(1, 1.25, height),
-                           Vector3(4, 0.25, -height));
+    const Triangle3 second(Vector3(1, 0.25, height), Vector3(1, 1.25, height), Vector3(4, 0.25, -height));
 
     const auto result = triangles::intersection(first, second);
     ASSERT_TRUE(result.has_value());

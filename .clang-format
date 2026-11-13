@@ -30,5 +30,3 @@ AllowShortIfStatementsOnASingleLine: Never
 RemoveBracesLLVM: true
 AllowShortLoopsOnASingleLine: false
 SortIncludes: Never
-
-

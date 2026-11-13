@@ -31,43 +31,49 @@ GeneratorConfig MakeConfig() {
     };
 }
 
-}  // namespace
+} // namespace
 
-TEST(GeneratorTests, CreatesWithValidConfig) {
+TEST(GeneratorTests,
+     CreatesWithValidConfig) {
     const auto generator = Generator::Create(MakeConfig());
 
     EXPECT_TRUE(generator.has_value());
 }
 
-TEST(GeneratorTests, RejectsInvalidTargetLength) {
+TEST(GeneratorTests,
+     RejectsInvalidTargetLength) {
     auto config = MakeConfig();
     config.target_max_edge_length = -1.0;
 
     EXPECT_FALSE(Generator::Create(config));
 }
 
-TEST(GeneratorTests, RejectsInvalidSizeVariation) {
+TEST(GeneratorTests,
+     RejectsInvalidSizeVariation) {
     auto config = MakeConfig();
     config.relative_size_variation = 1.0;
 
     EXPECT_FALSE(Generator::Create(config));
 }
 
-TEST(GeneratorTests, RejectsInvalidShapeQuality) {
+TEST(GeneratorTests,
+     RejectsInvalidShapeQuality) {
     auto config = MakeConfig();
     config.min_shape_quality = 0.0;
 
     EXPECT_FALSE(Generator::Create(config));
 }
 
-TEST(GeneratorTests, RejectsZeroAttempts) {
+TEST(GeneratorTests,
+     RejectsZeroAttempts) {
     auto config = MakeConfig();
     config.max_shape_attempts = 0;
 
     EXPECT_FALSE(Generator::Create(config));
 }
 
-TEST(GeneratorTests, RejectsDomainTooSmall) {
+TEST(GeneratorTests,
+     RejectsDomainTooSmall) {
     auto config = MakeConfig();
 
     const auto domain = AABB::Create(
@@ -81,22 +87,18 @@ TEST(GeneratorTests, RejectsDomainTooSmall) {
     EXPECT_FALSE(Generator::Create(config));
 }
 
-TEST(GeneratorTests, GeneratesTrianglesInsideDomain) {
-    const auto domain = AABB::Create(
-        Vector3{-5.0, -5.0, -5.0},
-        Vector3{5.0, 5.0, 5.0}
-    );
+TEST(GeneratorTests,
+     GeneratesTrianglesInsideDomain) {
+    const auto domain = AABB::Create(Vector3{-5.0, -5.0, -5.0}, Vector3{5.0, 5.0, 5.0});
 
     ASSERT_TRUE(domain);
 
-    const GeneratorConfig config{
-        .domain = *domain,
-        .target_max_edge_length = 1.0,
-        .relative_size_variation = 0.1,
-        .min_shape_quality = 0.1,
-        .seed = 42u,
-        .max_shape_attempts = 1000
-    };
+    const GeneratorConfig config{.domain = *domain,
+                                 .target_max_edge_length = 1.0,
+                                 .relative_size_variation = 0.1,
+                                 .min_shape_quality = 0.1,
+                                 .seed = 42u,
+                                 .max_shape_attempts = 1000};
 
     auto generator = Generator::Create(config);
 
@@ -121,17 +123,16 @@ TEST(GeneratorTests, GeneratesTrianglesInsideDomain) {
         EXPECT_GE(max_edge, 0.9 - 1e-10);
         EXPECT_LE(max_edge, 1.1 + 1e-10);
 
-        const double quality =
-            2.0 * triangle.area() / (max_edge * max_edge);
+        const double quality = 2.0 * triangle.area() / (max_edge * max_edge);
 
         EXPECT_GE(quality, config.min_shape_quality);
     }
 }
 
-TEST(GeneratorTests, UnsupportedPredicateRangeReturnsGenerationFailure) {
+TEST(GeneratorTests,
+     UnsupportedPredicateRangeReturnsGenerationFailure) {
     auto config = MakeConfig();
-    config.domain = *AABB::Create(Vector3{-0x1p264, -0x1p264, -0x1p264},
-                                  Vector3{0x1p264, 0x1p264, 0x1p264});
+    config.domain = *AABB::Create(Vector3{-0x1p264, -0x1p264, -0x1p264}, Vector3{0x1p264, 0x1p264, 0x1p264});
     config.target_max_edge_length = 0x1p260;
     auto generator = Generator::Create(config);
 

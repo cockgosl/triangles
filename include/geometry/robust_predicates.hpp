@@ -66,6 +66,11 @@ inline constexpr double max_coordinate_magnitude = 0x1p250;
                             const Coordinates3& c,
                             const Coordinates3& d);
 
+// Approximate cross product from exact expansions; preserves component zeroes.
+[[nodiscard]] Coordinates3 triangle_cross(const Coordinates3& a,
+                                          const Coordinates3& b,
+                                          const Coordinates3& c);
+
 } // namespace triangles::robust
 
 #endif //ROBUST_PREDICATE_HPP_

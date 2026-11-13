@@ -9,22 +9,29 @@
 
 namespace triangles {
 
+enum class TriangleSource {
+    kGenerator,
+    kInput
+};
+
 class Application {
-  private:
+private:
     bool Initialize();
     void RenderFrame();
     void ProcessInput(float delta_time);
 
+    TriangleSource source_;
+    bool console_;
     std::optional<::graphics::Window> window_;
     ::graphics::Camera camera_;
     ::graphics::TriangleRenderer renderer_;
 
-  public:
-    Application();
+public:
+    explicit Application(TriangleSource source = TriangleSource::kInput, bool console = false);
     ~Application() noexcept = default;
 
-    Application(const Application &) = delete;
-    Application &operator=(const Application &) = delete;
+    Application(const Application&) = delete;
+    Application& operator=(const Application&) = delete;
 
     int Run();
 };

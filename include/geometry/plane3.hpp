@@ -30,8 +30,10 @@ public:
     double get_c() const { return C_; }
     double get_d() const { return D_; }
 
-    static bool is_parallel(const Plane3& plane1, const Plane3& plane2);
-    static bool is_coincide(const Plane3& plane1, const Plane3& plane2);
+    static bool is_parallel(const Plane3& plane1,
+                            const Plane3& plane2);
+    static bool is_coincide(const Plane3& plane1,
+                            const Plane3& plane2);
 };
 
 } // namespace triangles
